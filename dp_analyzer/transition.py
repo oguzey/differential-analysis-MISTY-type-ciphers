@@ -1,10 +1,8 @@
-
 from side import Side
-from side import SideException
 from conditions import Condition
 from conditions import StateConditions
-from conditions import CustomConditions
-from conditions import ConditionExeption
+from conditions import ConditionException
+from logger import logger
 
 
 class Transition(object):
@@ -59,7 +57,6 @@ class Transition(object):
 
     def make_condition(self):
 
-        non_zero_side = None
         if self.__left.is_empty() and not self.__right.is_empty():
             non_zero_side = self.__right
         elif not self.__left.is_empty() and self.__right.is_empty():
@@ -79,7 +76,7 @@ class SystemTransition(object):
 
     def __str__(self):
         system = ""
-        for ind in xrange(len(self.__transitions)):
+        for ind in range(len(self.__transitions)):
             system += "%d) %s\n" % (ind + 1, str(self.__transitions[ind]))
         return system
 
@@ -97,9 +94,9 @@ class SystemTransition(object):
     def apply_condition(self, condition):
         assert isinstance(condition, Condition)
         for transition in self.__transitions:
-            # print "Before transition %s ||| condition %s" % (str(transition), str(condition))
+            # logger.debug("Before transition %s ||| condition %s" % (str(transition), str(condition))
             transition.apply_condition(condition)
-            # print "After transition %s ||| condition %s" % (str(transition), str(condition))
+            # logger.debug("After transition %s ||| condition %s" % (str(transition), str(condition))
 
     def apply_conditions(self, conditions):
         assert isinstance(conditions, list)
@@ -112,10 +109,10 @@ class SystemTransition(object):
         rm = []
         for transition in self.__transitions:
             if transition.has_both_empty_side():
-                # print "will rm == ", transition
+                # logger.debug("will rm == ", transition
                 rm.append(transition)
             elif transition.has_empty_side():
-                # print "emty == ", transition
+                # logger.debug("emty == ", transition
                 null_trans.append(transition)
                 count += 1
 
@@ -129,7 +126,7 @@ class SystemTransition(object):
         return count
 
     def apply_custom_conditions(self, custom_conditions):
-        for index in xrange(len(custom_conditions) - 1, -1, -1):
+        for index in range(len(custom_conditions) - 1, -1, -1):
             condition = custom_conditions.get_condition(index)
             self.apply_condition(condition)
 
@@ -146,10 +143,10 @@ class SystemTransition(object):
         for trans in self.__transitions:
             unknowns.extend(trans.get_left_side().get_unknowns_id())
             unknowns.extend(trans.get_right_side().get_unknowns_id())
-            # print "[count_unknown_vars] transition = %s " % str(trans)
-            # print "[count_unknown_vars] %s" % str(unknowns)
+            # logger.debug("[count_unknown_vars] transition = %s " % str(trans)
+            # logger.debug("[count_unknown_vars] %s" % str(unknowns)
         s = set(unknowns)
-        # print "[count_unknown_vars] len(%s) = %d" % (str(s), len(s))
+        # logger.debug("[count_unknown_vars] len(%s) = %d" % (str(s), len(s))
         return len(s)
 
     def do_fast_estimation(self, custom_cond, common_cond_nz):
@@ -160,8 +157,8 @@ class SystemTransition(object):
             tr_left = trans.get_left_side()
             tr_right = trans.get_right_side()
 
-            # print "Let see on %s" % str(trans)
-            # print "List of non zero sides {\n\t%s\n}" % "\n\t".join(map(str, nz_sides))
+            # logger.debug("Let see on %s" % str(trans)
+            # logger.debug("List of non zero sides {\n\t%s\n}" % "\n\t".join(map(str, nz_sides))
 
             if tr_left in nz_sides and tr_right not in nz_sides:
                 custom_cond.append_condition(
@@ -188,37 +185,37 @@ class SystemTransition(object):
     def simplify_with_custom_conditions(self, cust_cond):
         count_add_cc = 1  # by default
         while count_add_cc > 0:
-            # print "[simplify] New custom conditions " + str(cust_cond)
+            # logger.debug("[simplify] New custom conditions " + str(cust_cond)
             self.apply_custom_conditions(cust_cond)
-            # print "[simplify] New system apply_custom_conditions \n" + str(self)
+            # logger.debug("[simplify] New system apply_custom_conditions \n" + str(self)
             count_add_cc = self.analyse_and_set_custom_conditions(cust_cond)
-            # print "[simplify] New system " + str(self)
+            # logger.debug("[simplify] New system " + str(self)
 
     @staticmethod
     def estimate(system, custom_cond, common_in, common_out, comcon_nz, res_list, call_as_fork):
         count_triviality = 0
         count_with_unknowns = 0
-        print "#"*50 + "start estimation" + "#"*50
-        print "This call of function is %s FORK" % ("" if call_as_fork else "NOT")
-        print "Start estimate function with "
-        print "system \n%s" % str(system)
-        print "and custom_conditions %s\n" % str(custom_cond)
+        logger.debug("#"*50 + "start estimation" + "#"*50)
+        logger.debug("This call of function is %s FORK" % ("" if call_as_fork else "NOT"))
+        logger.debug("Start estimate function with ")
+        logger.debug("system \n%s" % str(system))
+        logger.debug("and custom_conditions %s\n" % str(custom_cond))
 
         transitions = system.get_transitions()
 
-        for x in xrange(len(transitions) - 1, -1, -1):
+        for x in range(len(transitions) - 1, -1, -1):
             if custom_cond.exist_contradiction(comcon_nz):
-                print "ESTIMATE: CONDITIONS HAVE CONTADICTIONS"
-                print "custom_conditions %s\n" % str(custom_cond)
-                print "common_in ", str(common_in)
-                print "common_out ", str(common_out)
+                logger.debug("ESTIMATE: CONDITIONS HAVE CONTADICTIONS")
+                logger.debug("custom_conditions %s\n" % str(custom_cond))
+                logger.debug("common_in ", str(common_in))
+                logger.debug("common_out ", str(common_out))
                 SystemTransition.__write_result(
                         system, custom_cond, common_in, common_out, count_triviality,
                         count_with_unknowns, res_list, call_as_fork, True)
                 return None
 
             transition = transitions[x]
-            print "\nAnalyse transition ", str(transition)
+            logger.debug("\nAnalyse transition ", str(transition))
             left = transition.get_left_side()
             right = transition.get_right_side()
             assert len(left) > 0 and len(right) > 0
@@ -226,47 +223,47 @@ class SystemTransition(object):
             # 2 sides does not have unknowns
             if not left.contains_unknown() and not right.contains_unknown():
                 count_triviality += 1
-                print "Transition is triviality"
+                logger.debug("Transition is triviality")
                 continue
 
             is_left_non_zero = custom_cond.is_side_non_zero(left)
             is_right_non_zero = custom_cond.is_side_non_zero(right)
 
             if is_left_non_zero and is_right_non_zero:
-                print "Both sides of transition are NOT ZERO"
+                logger.debug("Both sides of transition are NOT ZERO")
                 # do nothing, just increase counter
                 count_with_unknowns += 1
                 continue
             elif is_left_non_zero and not is_right_non_zero:
-                print "Left side '%s' is NON ZERO. Rigth is undefined" % str(left)
+                logger.debug("Left side '%s' is NON ZERO. Rigth is undefined" % str(left))
                 # fixed left side: not fork
                 nz = Condition.create_non_zero_condition(right.copy())
-                print "Create non zero condition " + str(nz)
+                logger.debug("Create non zero condition " + str(nz))
                 try:
                     custom_cond.append_condition(nz)
-                except ConditionExeption:
-                    print "#"*30 + "UNEXPECTED CONDITION EXEPTION" + "#"*30
+                except ConditionException:
+                    logger.debug("#"*30 + "UNEXPECTED CONDITION EXEPTION" + "#"*30)
                     SystemTransition.__write_result(
                         system, custom_cond, common_in, common_out, count_triviality,
                         count_with_unknowns, res_list, call_as_fork, True)
                     return
-                print "Updated custom condition is " + str(custom_cond)
+                logger.debug("Updated custom condition is " + str(custom_cond))
                 count_with_unknowns += 1
                 continue
             elif not is_left_non_zero and is_right_non_zero:
-                print "Right side '%s' is NON ZERO. Left undefined" % str(right)
+                logger.debug("Right side '%s' is NON ZERO. Left undefined" % str(right))
                 # fixed right side: not fork
                 nz = Condition.create_non_zero_condition(left.copy())
-                print "Create non zero condition " + str(nz)
+                logger.debug("Create non zero condition " + str(nz))
                 try:
                     custom_cond.append_condition(nz)
-                except ConditionExeption:
-                    print "#"*30 + "UNEXPECTED CONDITION EXEPTION" + "#"*30
+                except ConditionException:
+                    logger.debug("#"*30 + "UNEXPECTED CONDITION EXEPTION" + "#"*30)
                     SystemTransition.__write_result(
                         system, custom_cond, common_in, common_out, count_triviality,
                         count_with_unknowns, res_list, call_as_fork, True)
                     return
-                print "Updated custom condition is " + str(custom_cond)
+                logger.debug("Updated custom condition is " + str(custom_cond))
                 count_with_unknowns += 1
                 continue
             else:
@@ -277,41 +274,41 @@ class SystemTransition(object):
                 # both sides not zero
                 # check that they does not contain unkwowns
                 if not left.contains_unknown() or not right.contains_unknown():
-                    print 'Left or right sides does not contains UNKNOWN'
+                    logger.debug('Left or right sides does not contains UNKNOWN')
                     # need divide in two cases: zero and not zero
                     # zero case
                 else:
-                    print "Left and right contains UNKNOWN and sides in undefined"
-                    print "IT IS FOOORKKK!!!!!"
+                    logger.debug("Left and right contains UNKNOWN and sides in undefined")
+                    logger.debug("IT IS FOOORKKK!!!!!")
                     fork = True
                     res_list.append("fork")
 
-                print "Creating new components for zero case"
+                logger.debug("Creating new components for zero case")
                 new_custom_c = custom_cond.copy()
                 left_zc = Condition.create_zero_condition(left.copy())
                 right_zc = Condition.create_zero_condition(right.copy())
-                print "New zero conditions %s and %s" % (str(left_zc), str(right_zc))
+                logger.debug("New zero conditions %s and %s" % (str(left_zc), str(right_zc)))
                 new_system = system.copy()
-                print "New system copy \n" + str(new_system)
+                logger.debug("New system copy \n" + str(new_system))
                 try:
                     new_custom_c.append_condition(left_zc)
                     new_custom_c.append_condition(right_zc)
                     new_system.simplify_with_custom_conditions(new_custom_c)
-                    print "system after simplify \n" + str(new_system)
-                    print "Updated custom conditions " + str(new_custom_c)
+                    logger.debug("system after simplify \n" + str(new_system))
+                    logger.debug("Updated custom conditions " + str(new_custom_c))
                     if new_custom_c.exist_contradiction(comcon_nz):
-                        print "ESTIMATE: CONDITIONS HAVE CONTADICTIONS2"
-                        print "custom_conditions %s\n" % str(custom_cond)
-                        print "common_in ", str(common_in)
-                        print "common_out ", str(common_out)
+                        logger.debug("ESTIMATE: CONDITIONS HAVE CONTADICTIONS2")
+                        logger.debug("custom_conditions %s\n" % str(custom_cond))
+                        logger.debug("common_in ", str(common_in))
+                        logger.debug("common_out ", str(common_out))
                         SystemTransition.__write_result(
                                 new_system, custom_cond, common_in, common_out, count_triviality,
                                 count_with_unknowns, res_list, call_as_fork, True)
                         return
-                    print "Goto recursion"
+                    logger.debug("Goto recursion")
 
-                except ConditionExeption:
-                    print "#"*30 + "Catche ConditionExeption. System FAIL." + "#"*30
+                except ConditionException:
+                    logger.debug("#"*30 + "Catche ConditionExeption. System FAIL." + "#"*30)
                     SystemTransition.__write_result(
                         new_system, custom_cond, common_in, common_out, count_triviality,
                         count_with_unknowns, res_list, call_as_fork, True)
@@ -329,14 +326,14 @@ class SystemTransition(object):
                 # none zero case
                 left_nzc = Condition.create_non_zero_condition(left.copy())
                 right_nzc = Condition.create_non_zero_condition(right.copy())
-                print "New non zero conditions %s and %s" % (str(left_nzc), str(right_nzc))
+                logger.debug("New non zero conditions %s and %s" % (str(left_nzc), str(right_nzc)))
                 try:
                     custom_cond.append_condition(left_nzc)
                     custom_cond.append_condition(right_nzc)
-                    print "Updated custom conditions " + str(custom_cond)
+                    logger.debug("Updated custom conditions " + str(custom_cond))
                     count_with_unknowns += 1
-                except ConditionExeption:
-                    print "#"*30 + "Catche ConditionExeption. System FAIL." + "#"*30
+                except ConditionException:
+                    logger.debug("#"*30 + "Catche ConditionExeption. System FAIL." + "#"*30)
                     SystemTransition.__write_result(
                         system, custom_cond, common_in, common_out, count_triviality,
                         count_with_unknowns, res_list, call_as_fork, True)
@@ -374,48 +371,48 @@ class SystemTransition(object):
             "transition_with_unknowns": count_with_unknowns,
             "fail": was_fail
         }
-        print "===>>>BEFORE END<<<==="
+        logger.debug("===>>>BEFORE END<<<===")
 
         for key, value in dct.items():
-            print "%s = %s" % (key, str(value))
-        print "===>>>BEFORE END<<<==="
+            logger.debug("%s = %s" % (key, str(value)))
+        logger.debug("===>>>BEFORE END<<<===")
         if was_fail:
             # res_list.append("Fail")
             pass
         else:
             expo = count_triviality + count_with_unknowns - unknown_vars
             est = ("p^%d" % expo, pow(0.5, expo))
-            print "current est " + str(est)
+            logger.debug("current est " + str(est))
             # res_list.append(est)
             if len(res_list) == 0:
                 res_list.append(est)
-                print "append " + est[0]
+                logger.debug("append " + est[0])
             else:
                 if res_list[0] == 'fork':
                     res_list.append(est)
-                    print "append " + est[0]
+                    logger.debug("append " + est[0])
                 else:
                     # assert len(res_list) == 1
-                    print "res_list = " + str(res_list)
+                    logger.debug("res_list = " + str(res_list))
 
-                    for x in xrange(len(res_list)):
+                    for x in range(len(res_list)):
                         if isinstance(res_list[x], tuple):
                             comp_expo = res_list[x][1]
-                            print "compare with est " + str(res_list[x])
+                            logger.debug("compare with est " + str(res_list[x]))
                             if est[1] > comp_expo:
                                 res_list[x] = est
-                                print "replace to " + est[0]
+                                logger.debug("replace to " + est[0])
                             else:
-                                print "list withou changes"
+                                logger.debug("list withou changes")
                             break
                     else:
                         res_list.append(est)
-                        print "append " + est[0]
-                    print "list %s" + str(res_list)
+                        logger.debug("append " + est[0])
+                    logger.debug("list %s" + str(res_list))
 
         if not call_as_fork:
-            print "Not fork end"
+            logger.debug("Not fork end")
         else:
-            print "Fork end"
+            logger.debug("Fork end")
 
-        print "#"*50 + "end estimation" + "#"*50
+        logger.debug("#"*50 + "end estimation" + "#"*50)

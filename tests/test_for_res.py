@@ -26,7 +26,7 @@ def is_fork_list(lst):
     # print "call is_fork_list with " + str(lst)
     if lst[0] == 'fork':
         # print "first fork"
-        for x in xrange(1, len(lst)):
+        for x in range(1, len(lst)):
             if not isinstance(lst[x], tuple):
                 # print "%s not tup" % str(lst[x])
                 return False
@@ -68,7 +68,7 @@ def get_sum(lst):
 
     res_str = ''
     res_value = 0
-    for x in xrange(1, len(lst)):
+    for x in range(1, len(lst)):
         tup = lst[x]
         res_str += " + " + tup[0]
         res_value += tup[1]
@@ -78,7 +78,7 @@ def get_sum(lst):
 
 def merge_fork(lst):
     remove_empty_str(lst)
-    for x in xrange(len(lst)):
+    for x in range(len(lst)):
         if isinstance(lst[x], list):
             # print "found list " + str(lst[x])
             remove_empty_str(lst[x])
@@ -95,7 +95,7 @@ def merge_fork(lst):
 
 def choose_max(array, root, lst):
     remove_empty_str(lst)
-    for x in xrange(len(lst)):
+    for x in range(len(lst)):
         if isinstance(lst[x], list):
             remove_empty_str(lst[x])
             if len(lst[x]) == 0:
@@ -104,7 +104,7 @@ def choose_max(array, root, lst):
                 copy_lst = cutted_tuples(lst[x])
                 # print "list cont tuples " + str(copy_lst)
                 # lst[x] = get_max_from_tuples(lst[x])
-                for i in xrange(len(copy_lst) - 1):  # do not include self
+                for i in range(len(copy_lst) - 1):  # do not include self
                     tup = copy_lst[i]
                     lst[x] = tup
                     # print "lst[x] = " + str(lst[x])
@@ -170,7 +170,7 @@ def put_normalise_to_dict(data, dct, num_case):
         arr.remove('')
     for x in arr:
         if not isinstance(x, tuple):
-            print "UNEXPECTED DATA " + str(x)
+            print("UNEXPECTED DATA " + str(x))
             continue
         pol = normalise_polinom(x[0])
         # print "put %s" % pol

@@ -1,10 +1,10 @@
 from enum import Enum
 from variable import Variable
 from side import Side
-from side import SideException
+from logger import logger
 
 
-class ConditionExeption(Exception):
+class ConditionException(Exception):
     pass
 
 
@@ -101,7 +101,7 @@ class Condition(object):
         return False
 
     def swap_sides(self):
-        # print "[swap_sides] ", str(self)
+        # logger.debug("[swap_sides] ", str(self)
         # assert len(self.__left_side) == 0 and len(self.__right_side) > 0
         right = self.__right_side
         self.__right_side = self.__left_side
@@ -143,11 +143,11 @@ class Condition(object):
 
     def __get_all_in_left_side(self):
         if self.__state == StateConditions.IS_NOT_ZERO:
-            return (self.__left_side, self.__state)
+            return self.__left_side, self.__state
         else:
             c = self.__right_side.copy()
             c.add_side(self.__left_side)
-            return (c, StateConditions.IS_ZERO)
+            return c, StateConditions.IS_ZERO
 
     def compare_conditions(self, other):
         """
@@ -161,16 +161,16 @@ class Condition(object):
             return CompareCondition.CONTRADICTION
         this = self.__get_all_in_left_side()
         other2 = other.__get_all_in_left_side()
-        # print "[compare_conditions] %s vs %s" % (str(self), str(other))
+        # logger.debug("[compare_conditions] %s vs %s" % (str(self), str(other))
         if this[0] == other2[0]:
             if this[1] == other2[1]:
-                # print "equal"
+                # logger.debug("equal"
                 return CompareCondition.EQUAL
             else:
-                # print "contra"
+                # logger.debug("contra"
                 return CompareCondition.CONTRADICTION
         else:
-            # print "not equal"
+            # logger.debug("not equal"
             return CompareCondition.NOT_EQUAL
 
     @staticmethod
@@ -259,7 +259,7 @@ class CommonConditions(object):
 
         all_zero_pos = []
 
-        for x in xrange(1, max_number - 1):
+        for x in range(1, max_number - 1):
             all_zero_pos.append(self.get_num_bits(x, max_bits))
         all_zero_pos.sort(self.comparator)
         all_zero_pos.append([])
@@ -267,7 +267,7 @@ class CommonConditions(object):
         for zero_pos in all_zero_pos:
             zero_vars = []
             none_zero_vars = []
-            for ind in xrange(len(self.__input_variables)):
+            for ind in range(len(self.__input_variables)):
                 if ind in zero_pos:
                     zero_vars.append(Condition(
                         Side(self.__input_variables[ind]),
@@ -310,46 +310,46 @@ class CustomConditions(object):
 
     def __update_all(self):
         length = len(self.__conditions)
-        for x in xrange(length):
+        for x in range(length):
             first = self.__conditions[x]
-            for y in xrange(length):
+            for y in range(length):
                 if x != y:
                     second = self.__conditions[y]
                     second.update_with(first)
                     if not second.is_correct():
-                        raise ConditionExeption("Bad condition %s" % str(second))
+                        raise ConditionException("Bad condition %s" % str(second))
 
     def __update_conditions(self):
         self.__update_all()
-        # print "[append_condition] after __update_all " + str(self)
+        # logger.debug("[append_condition] after __update_all " + str(self)
         self.remove_duplicate_conditions()
-        # print "[append_condition] after remove_duplicate_conditions " + str(self)
+        # logger.debug("[append_condition] after remove_duplicate_conditions " + str(self)
         if self.exist_contradiction_internal():
-            raise ConditionExeption("contains contradictions")
-        # print "[append_condition] after exist_contradiction " + str(self)
+            raise ConditionException("contains contradictions")
+        # logger.debug("[append_condition] after exist_contradiction " + str(self)
         self.remove_useless()
 
     def append_condition(self, condition):
-        print "[append_condition] append " + str(condition)
-        # print "[append_condition] to " + str(self)
+        logger.debug("[append_condition] append " + str(condition))
+        # logger.debug("[append_condition] to " + str(self)
         if not self.__is_exist_conditions(condition):
             self.__conditions.append(condition)
-        # print "[append_condition] after append " + str(self)
+        # logger.debug("[append_condition] after append " + str(self)
         self.__update_conditions()
-        print "[append_condition] cc became " + str(self)
+        logger.debug("[append_condition] cc became " + str(self))
 
     def remove_duplicate_conditions(self):
         rm = []
         length = len(self.__conditions)
-        for x in xrange(length):
+        for x in range(length):
             first = self.__conditions[x]
-            for y in xrange(x + 1, length):
+            for y in range(x + 1, length):
                 second = self.__conditions[y]
                 if first.compare_conditions(second) == CompareCondition.EQUAL:
                     rm.append(second)
 
         for cond in rm:
-            print "[remove_duplicate_conditions] will remove " + str(cond)
+            logger.debug("[remove_duplicate_conditions] will remove " + str(cond))
             self.__conditions.remove(cond)
 
     def remove_useless(self):
@@ -358,7 +358,7 @@ class CustomConditions(object):
             if cond.is_useless():
                 rm.append(cond)
         for cond in rm:
-            print "[remove_useless] will remove " + str(cond)
+            logger.debug("[remove_useless] will remove " + str(cond))
             self.__conditions.remove(cond)
 
     def get_condition(self, index):
@@ -371,21 +371,21 @@ class CustomConditions(object):
         for self_cond in self.__conditions:
             for c in common_conditions:
                 if c.compare_conditions(self_cond) == CompareCondition.CONTRADICTION:
-                    print "Found contradictions %s and %s" % (str(c), str(self_cond))
+                    logger.debug("Found contradictions %s and %s" % (str(c), str(self_cond)))
                     return True
-        print "not found contra with common_conditions"
+        logger.debug("not found contra with common_conditions")
         return self.exist_contradiction_internal()
 
     def exist_contradiction_internal(self):
         length = len(self.__conditions)
-        for x in xrange(length):
+        for x in range(length):
             first = self.__conditions[x]
-            for y in xrange(x + 1, length):
+            for y in range(x + 1, length):
                 second = self.__conditions[y]
                 if first.compare_conditions(second) == CompareCondition.CONTRADICTION:
-                    print "Found contradictions %s and %s" % (str(first), str(second))
+                    logger.debug("Found contradictions %s and %s" % (str(first), str(second)))
                     return True
-        print "not found contra"
+        logger.debug("not found contra")
         return False
 
     def copy(self):
@@ -395,10 +395,10 @@ class CustomConditions(object):
             # new_cc.append_condition(condition.copy())
         new_cc.__update_conditions()
 
-        # print "\n\n--------start copy custom condition --------"
-        # print "old system %s" % str(self)
-        # print "new system %s" % str(new_cc)
-        # print "--------end copy custom condition --------\n\n"
+        # logger.debug("\n\n--------start copy custom condition --------"
+        # logger.debug("old system %s" % str(self)
+        # logger.debug("new system %s" % str(new_cc)
+        # logger.debug("--------end copy custom condition --------\n\n"
 
         return new_cc
 
@@ -410,14 +410,14 @@ class CustomConditions(object):
         return False
 
     # def append_condition(self, condition):
-    #     # print "append cond = ", str(condition)
+    #     # logger.debug("append cond = ", str(condition)
     #     left_side = condition.get_left_side()
     #     right_side = condition.get_right_side()
     #     # assert len(left_side) == 1
-    #     # print "!!!before cond { "+"\n".join(map(str, self.__conditions))+"\n}"
+    #     # logger.debug("!!!before cond { "+"\n".join(map(str, self.__conditions))+"\n}"
 
     #     if self.__is_exist_conditions(condition):
-    #         print "Find the same condition %s. Not add it." % str(condition)
+    #         logger.debug("Find the same condition %s. Not add it." % str(condition)
     #         return
 
     #     if condition.get_state() == StateConditions.IS_NOT_ZERO:

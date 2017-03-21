@@ -124,15 +124,15 @@ c4 = Condition(Side(g2), Side(), StateConditions.IS_ZERO)
 cc = CustomConditions()
 
 cc.append_condition(c)
-print "after append 0 \n" + str(cc)
+print("after append 0 \n" + str(cc))
 cc.append_condition(c1)
-print "after append 1 \n" + str(cc)
+print("after append 1 \n" + str(cc))
 cc.append_condition(c2)
-print "after append 2 \n" + str(cc)
+print("after append 2 \n" + str(cc))
 cc.append_condition(c3)
-print "after append 3 \n" + str(cc)
+print("after append 3 \n" + str(cc))
 cc.append_condition(c4)
-print "after append 4 \n" + str(cc)
+print("after append 4 \n" + str(cc))
 
 
 
