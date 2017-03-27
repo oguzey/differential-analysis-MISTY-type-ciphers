@@ -11,6 +11,8 @@ class TypeVariable(Enum):
 
 
 class Variable(object):
+    # __k__ - coefficient for calculation hash of Variable
+    __k__ = 1000000
     __id__ = {
         TypeVariable.INPUT: 1,
         TypeVariable.OUTPUT: 1,
@@ -34,12 +36,21 @@ class Variable(object):
         return self.__type == other.__type and self.__id == other.__id
 
     def __ne__(self, other):
-        return self.__type != other.__type or self.__id != other.__id
+        return not self.__eq__(other)
 
     def __gt__(self, other):
         if self.__type != other.__type:
             raise Exception("Compare two different types of Variables")
         return self.__id > other.__id
+
+    def __str__(self):
+        return "{} var: {} ".format(str(self.__type), self.__id)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __hash__(self):
+        return Variable.__k__ * int(self.__type.value) + self.__id
 
     def set_to_zero(self):
         self.__is_zero = True
@@ -64,8 +75,3 @@ class Variable(object):
 
     def get_id(self):
         return self.__id
-
-    def __str__(self):
-        type_obj = str(self.__type)
-        # return "%s var: %d (%s)" % (type_obj, self.__id, hex(id(self)))
-        return "%s var: %d " % (type_obj, self.__id)

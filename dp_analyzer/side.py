@@ -12,12 +12,10 @@ class Side(object):
         self.__vars = list(args)
 
     def __eq__(self, other):
-        if len(self.__vars) == len(other.__vars):
-            for var in self.__vars:
-                if var not in other.__vars:
-                    return False
-            return True
-        return False
+        if len(self.__vars) != len(other.__vars):
+            return False
+
+        return sorted(self.__vars, key=hash) == sorted(other.__vars, key=hash)
 
     def __str__(self):
         str_vars = map(lambda var: "[" + str(var) + "]", self.__vars)

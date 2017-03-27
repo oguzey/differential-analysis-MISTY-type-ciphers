@@ -92,29 +92,10 @@ def main(system, inputs, outputs):
     print("Total fails is %d" % fails)
     print("Total estimated is %d" % estimated)
 
-    print("+" * 120)
-    for x in range(len(results)):
-        print("%d) %s" % (x, str(results[x])))
-    print("+" * 120)
-
     uniq_estim = {}
     for x in range(len(results)):
-
-        # print "%d) before %s" % (x, str(results[x]))
         put_normalise_to_dict(results[x], uniq_estim, x)
-        # print "%d) after %s" % (x, str(results[x]))
 
-    #     while '' in results[x]:
-    #         results[x].remove('')
-
-    #     for value in results[x]:
-    #         if value[1] > max_est[2]:
-    #             max_est = (x + 1, value[0], value[1])
-    #             print "NEW MAX " + str(max_est)
-
-    # print "\nMax estimation is " + str(max_est)
-
-    print("\n\n")
     res = [(key, value) for key, value in list(uniq_estim.items())]
     return sorted(res, key=lambda pair: pair[0])
 
