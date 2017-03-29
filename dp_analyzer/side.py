@@ -18,8 +18,7 @@ class Side(object):
         return sorted(self.__vars, key=hash) == sorted(other.__vars, key=hash)
 
     def __str__(self):
-        str_vars = map(lambda var: "[" + str(var) + "]", self.__vars)
-        return " XOR ".join(str_vars) if len(str_vars) > 0 else "[]"
+        return " ⊕ ".join(map(str, self.__vars)) if len(self.__vars) > 0 else "[]"
 
     def __len__(self):
         return len(self.__vars)
@@ -40,7 +39,7 @@ class Side(object):
         return element in self.__vars
 
     def __contains_as_type(self, type_var):
-        return any([var.is_as_type(type_var) for var in self.__vars])
+        return any([var.has_type(type_var) for var in self.__vars])
 
     def contains_unknown(self):
         return self.__contains_as_type(TypeVariable.UNKNOWN)
@@ -72,7 +71,7 @@ class Side(object):
             raise SideException("No one %s Variable in Side" % str(type_var))
         max_var = None
         for var in self.__vars:
-            if var.is_as_type(type_var):
+            if var.has_type(type_var):
                 if max_var is None or var > max_var:
                     max_var = var
 
@@ -100,7 +99,7 @@ class Side(object):
     def __pop_all_by_type(self, type_var):
         elements = []
         for elem in self.__vars:
-            if elem.is_as_type(type_var):
+            if elem.has_type(type_var):
                 elements.append(elem)
 
         for elem in elements:

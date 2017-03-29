@@ -1,4 +1,5 @@
-from transitions import Transition
+from transition import Transition
+
 
 class SystemTransition(object):
     amount_cases = 0
@@ -98,19 +99,19 @@ class SystemTransition(object):
                     Condition.create_non_zero_condition(tr_right.copy()))
                 nz_sides.append(tr_right)
                 if tr_right.has_only_one_unknown():
-                    trans.set_simple()
+                    trans.make_simple()
                     count_simple += 1
             elif tr_left not in nz_sides and tr_right in nz_sides:
                 custom_cond.append_condition(
                     Condition.create_non_zero_condition(tr_left.copy()))
                 nz_sides.append(tr_left)
                 if tr_left.has_only_one_unknown():
-                    trans.set_simple()
+                    trans.make_simple()
                     count_simple += 1
 
             if not tr_left.contains_unknown() and (
                     not tr_right.contains_unknown()):
-                trans.set_simple()
+                trans.make_simple()
                 count_simple += 1
 
         return count_simple == len(self.__transitions)
