@@ -1,15 +1,18 @@
+import sys, os
+sys.path.append("dp_analyzer")
+
 from variable import Variable, TypeVariable
 from side import Side
-from transition import Transition
+from transition import Transition, BlockFunction
 from logger import logger
 
-a = variable.Variable(TypeVariable.INPUT)
-b = variable.Variable(TypeVariable.OUTPUT)
-c = variable.Variable(TypeVariable.UNKNOWN)
+a = Variable(TypeVariable.INPUT)
+b = Variable(TypeVariable.OUTPUT)
+c = Variable(TypeVariable.UNKNOWN)
 
 x = Side(a, b)
 y = Side(a, c)
 
-z = Transition(x, y)
+z = Transition(x, y, BlockFunction('F', 'p'))
 
 logger.info("transition: {}".format(z))

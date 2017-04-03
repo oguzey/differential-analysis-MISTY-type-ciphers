@@ -1,6 +1,5 @@
-from variable import Variable
-from variable import TypeVariable
-
+from variable import Variable, TypeVariable
+from logger import logger
 
 class SideException(Exception):
     pass
