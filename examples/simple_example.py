@@ -1,4 +1,4 @@
-import sys, os
+import sys
 sys.path.append("dp_analyzer")
 
 from variable import Variable, TypeVariable
