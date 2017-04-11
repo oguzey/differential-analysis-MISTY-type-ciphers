@@ -2,6 +2,7 @@ from enum import Enum
 from variable import Variable
 from side import Side
 from logger import logger
+from functools import cmp_to_key
 
 
 class ConditionException(Exception):
@@ -252,8 +253,9 @@ class CommonConditions(object):
 
         for x in range(1, max_number - 1):
             all_zero_pos.append(self.get_num_bits(x, max_bits))
-        all_zero_pos.sort(self.comparator)
+        all_zero_pos.sort(key=cmp_to_key(self.comparator))
         all_zero_pos.append([])
+        
 
         for zero_pos in all_zero_pos:
             zero_vars = []
