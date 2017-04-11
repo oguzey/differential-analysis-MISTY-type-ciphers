@@ -3,6 +3,7 @@ from variable import Variable
 from side import Side
 from logger import logger
 from functools import cmp_to_key
+from typing import List
 
 
 class ConditionException(Exception):
@@ -212,20 +213,20 @@ class CommonCondition(object):
 
 class CommonConditions(object):
     """ condition for input and output variables """
-    def __init__(self, *input_variables):
+    def __init__(self, *input_variables: List[Variable]):
         assert all([isinstance(x, Variable) and not x.is_unknown()
                     for x in input_variables])
         self.__input_variables = input_variables
         self.__conditions = []
+        self.__generate_conditions()
 
     def __len__(self):
         return len(self.__conditions)
 
     @staticmethod
-    def get_num_bits(number, max_bits):
+    def __get_num_bits(number: int, max_bits: int) -> List[int]:
         res = []
-        counter = 0
-        comp = 1
+        counter, comp = 0, 1
         while counter < max_bits:
             if (comp & number) > 0:
                 res.append(counter)
@@ -234,7 +235,7 @@ class CommonConditions(object):
         return res
 
     @staticmethod
-    def comparator(lst1, lst2):
+    def __comparator(lst1: List[int], lst2: List[int]) -> int:
         if len(lst1) < len(lst2):
             return -1
         elif len(lst1) > len(lst2):
@@ -242,21 +243,22 @@ class CommonConditions(object):
         else:
             return 1 if lst1 > lst2 else -1
 
-    def generate_conditions(self):
-        if len(self.__conditions) > 0:
-            return self.__conditions
-
-        max_bits = len(self.__input_variables)
+    def __generate_zero_positions(self, input_variables: List[Variable]) -> List[List[int]]:
+        max_bits = len(input_variables)
         max_number = pow(2, max_bits)
-
-        all_zero_pos = []
+        zero_pos = []
 
         for x in range(1, max_number - 1):
-            all_zero_pos.append(self.get_num_bits(x, max_bits))
-        all_zero_pos.sort(key=cmp_to_key(self.comparator))
-        all_zero_pos.append([])
-        
+            zero_pos.append(self.__get_num_bits(x, max_bits))
+        zero_pos.sort(key=cmp_to_key(self.__comparator))
+        zero_pos.append([])
+        return zero_pos
 
+    def __generate_conditions(self) -> None:
+        if len(self.__conditions) > 0:
+            raise ConditionException("Try generate conditions twice. Internal error.")
+
+        all_zero_pos = self.__generate_zero_positions(self.__input_variables)
         for zero_pos in all_zero_pos:
             zero_vars = []
             none_zero_vars = []
@@ -273,7 +275,6 @@ class CommonConditions(object):
                         Side(),
                         StateConditions.IS_NOT_ZERO))
             self.__conditions.append(CommonCondition(zero_vars, none_zero_vars))
-        return "OK"
 
     def get_condition(self, index):
         if index > len(self) - 1 or index < 0:

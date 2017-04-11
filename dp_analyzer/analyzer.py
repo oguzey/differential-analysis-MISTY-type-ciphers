@@ -15,10 +15,6 @@ def main(system, inputs, outputs):
     input_conditions = CommonConditions(*inputs)
     output_conditions = CommonConditions(*outputs)
 
-    logger.info("generating ...")
-    logger.info("input conditions... " + input_conditions.generate_conditions())
-    logger.info("output conditions... " + output_conditions.generate_conditions())
-
     amount_conditions = len(input_conditions)
     assert amount_conditions == len(output_conditions)
     logger.info("Amount conditions is %d" % amount_conditions)

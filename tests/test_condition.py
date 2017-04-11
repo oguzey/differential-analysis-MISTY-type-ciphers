@@ -15,12 +15,11 @@ def setup_module(module):
     
 def test_generate_conditions():
     global a1, a2, a3, a4
-    conds = CommonConditions(a1, a2, a3)
-    conds.generate_conditions()
-    logger.info("input conditions... " + conds.generate_conditions())
-    logger.info("conditions [{}] = {}".format(len(conds), conds))
+    conds = CommonConditions(a1, a2, a3, a4)
     for index in range(len(conds)):
         logger.info("\t condition: {}".format(conds.get_condition(index)))
+        
+    assert len(conds) == 15
 
 
 if __name__ == "__main__":
