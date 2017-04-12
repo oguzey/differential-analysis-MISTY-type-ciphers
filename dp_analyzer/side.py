@@ -130,7 +130,7 @@ class Side(object):
         for var in side.__vars:
             self.add_variable(var)
 
-    def move_side(self, other: 'Side') -> None:
+    def merge_side(self, other: 'Side') -> None:
         while len(other.__vars) > 0:
             self.add_variable(other.__vars.pop(0))
 

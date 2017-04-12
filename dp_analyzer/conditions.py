@@ -103,7 +103,7 @@ class Condition(object):
         if self.__state == StateConditions.IS_NOT_ZERO:
             return
         # FIXME: it is possible case that [0(left)] IS_EQUAL [a1, ... (rigth)]
-        self.__right_side.move_side(self.__left_side)
+        self.__right_side.merge_side(self.__left_side)
         var = self.__right_side.pop_the_latest_variable()
         if var:
             self.__left_side.add_variable(var)
