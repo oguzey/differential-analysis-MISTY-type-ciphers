@@ -3,6 +3,7 @@ from conditions import Condition
 from conditions import StateConditions
 from typing import Union
 from mypy_extensions import NoReturn
+from logger import logger
 
 
 class BlockFunction(object):
@@ -24,7 +25,7 @@ class Transition(object):
     def __init__(self, left_side: Side, right_side: Side, block_function: BlockFunction) -> None:
         self.__left = left_side
         self.__right = right_side
-        # test property, need to review
+        # TODO: test property, need to review
         self.__is_simple = False
         self._block_func = block_function
 
@@ -48,6 +49,7 @@ class Transition(object):
 
     def apply_condition(self, condition: Condition) -> None:
         if condition.get_state() == StateConditions.IS_NOT_ZERO:
+            logger.warn("Can not apply NOT_ZERO condition: {}".format(condition))
             return
 
         condition_left = condition.get_left_side()

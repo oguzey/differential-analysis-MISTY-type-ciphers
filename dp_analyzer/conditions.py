@@ -2,7 +2,6 @@ from enum import Enum
 from variable import Variable
 from side import Side
 from logger import logger
-from functools import cmp_to_key
 from typing import List
 
 
@@ -14,6 +13,13 @@ class StateConditions(Enum):
     IS_ZERO = 0
     IS_NOT_ZERO = 1
     IS_EQUAL = 2
+    
+    def __str__(self) -> str:
+        return {
+        0: '=',
+        1: '!=', 
+        2: '='
+        }.get(self._value_, '')
 
 
 class CompareCondition(Enum):
@@ -23,104 +29,85 @@ class CompareCondition(Enum):
 
 
 class Condition(object):
-    """ class describe conditions for system of transitions"""
-    def __init__(self, left_side, right_side, state):
+    """ Describes conditions for system of transitions"""
+    def __init__(self, left_side: Side, right_side: Side, state: StateConditions) -> None:
         """
-
         left_side - is list of Variables
-        left_side - is list of Variables or None if state eqaul
-                        to StateConditions.IS_ZERO
+        left_side - is list of Variables or None if state equal IS_ZERO
         state - state of condition
-
         """
-        super(Condition, self).__init__()
-        is_not_sum = (
-            state == StateConditions.IS_ZERO
-        )
-        if len(right_side) > 0 and is_not_sum:
-            raise Exception("Bad values in arguments: "
-                            "right_side is %s and state %s" %
-                            (right_side, state))
-        assert isinstance(left_side, Side) and isinstance(right_side, Side)
+        assert not right_side.is_empty() and state == StateConditions.IS_ZERO, "Internal error"
         self.__state = state
         self.__left_side = left_side
         self.__right_side = right_side
 
-    def __eq__(self, other):
-        assert isinstance(other, Condition)
+    def __eq__(self, other: 'Condition') -> bool:
         return self.__state == other.__state and (
             self.__left_side == other.__left_side and (
                 self.__right_side == other.__right_side))
 
-    def __str__(self):
-        if self.__state == StateConditions.IS_ZERO:
-            assert len(self.__right_side) == 0
-            return str(self.__left_side) + " = 0"
-        elif self.__state == StateConditions.IS_NOT_ZERO:
-            rs = "0" if len(self.__right_side) == 0 else str(self.__right_side)
-            return "%s != %s " % (str(self.__left_side), rs)
-        else:
-            return str(self.__left_side) + " = " + str(self.__right_side)
+    def __str__(self) -> str:
+        assert not self.__left_side.is_empty()
+        rside = '0' if self.__right_side.is_empty() else str(self.__right_side)
+        return '{} {} {}'.format(self.__left_side, self.__state, rside)
 
-    def get_left_side(self):
+    def get_left_side(self) -> Side:
         return self.__left_side
 
-    def get_right_side(self):
+    def get_right_side(self) -> Side:
         return self.__right_side
 
-    def get_state(self):
+    def get_state(self) -> StateConditions:
         return self.__state
 
-    def set_state(self, state):
+    def set_state(self, state: StateConditions) -> None:
         self.__state = state
 
-    def copy(self):
+    def copy(self) -> 'Condition':
         return Condition(self.__left_side.copy(), self.__right_side.copy(), self.__state)
 
-    def is_correct(self):
-        if len(self.__right_side) == 0:
+    def is_correct(self) -> bool:
+        if self.__right_side.is_empty():
             if self.__state == StateConditions.IS_EQUAL:
                 return False
-
-        if len(self.__right_side) != 0 and self.__state != StateConditions.IS_EQUAL:
-            return False
-
-        if len(self.__left_side) == 0 and len(self.__right_side) == 0 and (
-                self.__state == StateConditions.IS_NOT_ZERO):
-            return False
-
-        if self.__left_side == self.__right_side and (
-                self.__state == StateConditions.IS_NOT_ZERO):
+            if self.__left_side.is_empty() and self.__state == StateConditions.IS_NOT_ZERO:
+                return False
+        else:
+            # TODO: check me
+            if self.__state != StateConditions.IS_EQUAL:
+                return False
+        # TODO: check case (EMPTY, EMPTY, IS_ZERO)
+        if self.__left_side == self.__right_side and self.__state != StateConditions.IS_EQUAL:
             return False
         return True
 
-    def is_useless(self):
-        if len(self.__left_side) == 0 and len(self.__right_side) == 0 and (
+    def is_useless(self) -> bool:
+        # TODO: need to check this
+        if self.__left_side.is_empty() and self.__right_side.is_empty() and (
                 self.__state == StateConditions.IS_ZERO):
             return True
         if self.__left_side == self.__right_side and self.__state == StateConditions.IS_EQUAL:
             return True
         return False
 
-    def swap_sides(self):
-        # logger.debug("[swap_sides] ", str(self)
-        # assert len(self.__left_side) == 0 and len(self.__right_side) > 0
-        right = self.__right_side
+    def swap_sides(self) -> None:
+        new_left_side = self.__right_side
         self.__right_side = self.__left_side
-        self.__left_side = right
+        self.__left_side = new_left_side
 
-    #  need to check for useless
     def normalise(self):
+        """
+        Bring condition to particular format: a = b + c + ...
+        Before call the function make sure that condition is not useless.
+        """
         if self.__state == StateConditions.IS_NOT_ZERO:
             return
+        # FIXME: it is possible case that [0(left)] IS_EQUAL [a1, ... (rigth)]
         self.__right_side.move_side(self.__left_side)
         var = self.__right_side.get_the_latest_variable()
-        if var is not None:
+        if var:
             self.__left_side.add_variable(var)
-        if len(self.__right_side) == 0:
-            self.__state = StateConditions.IS_ZERO
-        else:
-            self.__state = StateConditions.IS_EQUAL
+        self.__state = StateConditions.IS_ZERO if self.__right_side.is_empty() else StateConditions.IS_EQUAL
 
     def update_with(self, condition):
         if condition.__state == StateConditions.IS_NOT_ZERO:
