@@ -66,11 +66,6 @@ class SystemTransition(object):
             condition = custom_conditions.get_condition(index)
             self.apply_condition(condition)
 
-    def apply_common_condition(self, common_condition):
-        zero_conds = common_condition.get_zero_condition()
-        for condition in zero_conds:
-            self.apply_condition(condition)
-
     def has_condition(self):
         return any([tr.has_empty_side() for tr in self.__transitions])
 

@@ -2,7 +2,7 @@ from typing import List, Tuple
 from functools import cmp_to_key
 from variable import Variable
 from side import Side
-from conditions import CommonCondition, Condition, StateConditions
+from conditions import Condition, StateConditions
 
 
 class CommonConditionGenerator(object):

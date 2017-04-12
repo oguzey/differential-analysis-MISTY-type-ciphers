@@ -180,26 +180,6 @@ class Condition(object):
         return Condition(side, Side(), StateConditions.IS_NOT_ZERO)
 
 
-class CommonCondition(object):
-    def __init__(self, zero_cond, non_zero_cond):
-        assert isinstance(zero_cond, list) and isinstance(non_zero_cond, list)
-        self.__zero_cond = zero_cond
-        self.__non_zero_cond = non_zero_cond
-
-    def __str__(self):
-        z_str = "; ".join(map(str, self.__zero_cond))
-        nz_str = "; ".join(map(str, self.__non_zero_cond))
-        str_cc = "{\n\tZero condition: %s" % z_str
-        str_cc += "\n\tNon zero condition: %s\n}" % nz_str
-        return str_cc
-
-    def get_zero_condition(self):
-        return tuple(self.__zero_cond)
-
-    def get_non_zero_condition(self):
-        return tuple(self.__non_zero_cond)
-
-
 class CustomConditions(object):
     """
     conditions which is created during applying CommonConditions and assumption
