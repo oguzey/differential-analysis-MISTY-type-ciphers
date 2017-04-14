@@ -2,7 +2,7 @@ from enum import Enum
 from variable import Variable
 from side import Side
 from logger import logger
-from typing import List
+from typing import List, Tuple
 
 
 class ConditionException(Exception):
@@ -16,9 +16,9 @@ class StateConditions(Enum):
     
     def __str__(self) -> str:
         return {
-        0: '=',
-        1: '!=', 
-        2: '='
+            StateConditions.IS_ZERO: '=',
+            StateConditions.IS_NOT_ZERO: '!=',
+            StateConditions.IS_EQUAL: '='
         }.get(self._value_, '')
 
 
@@ -95,7 +95,7 @@ class Condition(object):
         self.__right_side = self.__left_side
         self.__left_side = new_left_side
 
-    def normalise(self):
+    def normalise(self) -> None:
         """
         Bring condition to particular format: a = b + c + ...
         Before call the function make sure that condition is not useless.
@@ -104,12 +104,12 @@ class Condition(object):
             return
         # FIXME: it is possible case that [0(left)] IS_EQUAL [a1, ... (rigth)]
         self.__right_side.move_side(self.__left_side)
-        var = self.__right_side.get_the_latest_variable()
+        var = self.__right_side.pop_the_latest_variable()
         if var:
             self.__left_side.add_variable(var)
         self.__state = StateConditions.IS_ZERO if self.__right_side.is_empty() else StateConditions.IS_EQUAL
 
-    def update_with(self, condition):
+    def update_with(self, condition: 'Condition') -> None:
         if condition.__state == StateConditions.IS_NOT_ZERO:
             return
 
@@ -120,7 +120,7 @@ class Condition(object):
 
         self.normalise()
 
-    def __get_all_in_left_side(self):
+    def __get_all_in_left_side(self) -> Tuple[Side, StateConditions]:
         if self.__state == StateConditions.IS_NOT_ZERO:
             return self.__left_side, self.__state
         else:
@@ -128,7 +128,7 @@ class Condition(object):
             c.add_side(self.__left_side)
             return c, StateConditions.IS_ZERO
 
-    def compare_conditions(self, other):
+    def compare_conditions(self, other: 'Condition') -> CompareCondition:
         """
         can return
             CompareCondition.EQUAL
@@ -138,31 +138,22 @@ class Condition(object):
         assert isinstance(other, Condition)
         if not self.is_correct() or not other.is_correct():
             return CompareCondition.CONTRADICTION
-        this = self.__get_all_in_left_side()
-        other2 = other.__get_all_in_left_side()
+        side_self, state_self = self.__get_all_in_left_side()
+        side_other, state_other = other.__get_all_in_left_side()
         # logger.debug("[compare_conditions] %s vs %s" % (str(self), str(other))
-        if this[0] == other2[0]:
-            if this[1] == other2[1]:
-                # logger.debug("equal"
-                return CompareCondition.EQUAL
-            else:
-                # logger.debug("contra"
-                return CompareCondition.CONTRADICTION
+        if side_self == side_other:
+            return CompareCondition.EQUAL if state_self == state_other else CompareCondition.CONTRADICTION
         else:
-            # logger.debug("not equal"
             return CompareCondition.NOT_EQUAL
 
     @staticmethod
-    def create_zero_condition(side):
+    def create_zero_condition(side: Side) -> 'Condition':
         assert isinstance(side, Side) and len(side) > 0
-        var = side.get_the_latest_variable()
-        if len(side) == 0:
-            return Condition(Side(var), side, StateConditions.IS_ZERO)
-        else:
-            return Condition(Side(var), side, StateConditions.IS_EQUAL)
+        var = side.pop_the_latest_variable()
+        return Condition(Side(var), side, StateConditions.IS_ZERO if side.is_empty() else StateConditions.IS_EQUAL)
 
     @staticmethod
-    def create_non_zero_condition(side):
+    def create_non_zero_condition(side: Side) -> 'Condition':
         assert isinstance(side, Side) and len(side) > 0
         return Condition(side, Side(), StateConditions.IS_NOT_ZERO)
 

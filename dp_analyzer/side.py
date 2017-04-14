@@ -134,7 +134,7 @@ class Side(object):
         while len(other.__vars) > 0:
             self.add_variable(other.__vars.pop(0))
 
-    def get_the_latest_variable(self) -> Variable:
+    def pop_the_latest_variable(self) -> Variable:
         length = len(self.__vars)
         if length == 0:
             return None
