@@ -19,7 +19,7 @@ class StateConditions(Enum):
             StateConditions.IS_ZERO: '=',
             StateConditions.IS_NOT_ZERO: '!=',
             StateConditions.IS_EQUAL: '='
-        }.get(self.value, '')
+        }.get(self, '')
 
 
 class CompareCondition(Enum):
@@ -36,7 +36,8 @@ class Condition(object):
         left_side - is list of Variables or None if state equal IS_ZERO
         state - state of condition
         """
-        assert not right_side.is_empty() and state == StateConditions.IS_ZERO, "Internal error"
+        if not right_side.is_empty() and state == StateConditions.IS_ZERO:
+            assert "Internal error" == 0
         self.__state = state
         self.__left_side = left_side
         self.__right_side = right_side

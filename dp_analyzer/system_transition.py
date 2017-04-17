@@ -1,40 +1,45 @@
 from transition import Transition
 from conditions import Condition, ConditionException
 from logger import logger
+from typing import List
 
 
 class SystemTransition(object):
     amount_cases = 0
 
-    def __init__(self, *transitions):
+    def __init__(self, *transitions: Transition) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
         self.__transitions = list(transitions)
+        self.__amount_rounds = len(self.__transitions)
 
-    def __str__(self):
+    def __str__(self) -> str:
         system = ""
         for ind in range(len(self.__transitions)):
             system += "%d) %s\n" % (ind + 1, str(self.__transitions[ind]))
         return system
 
-    def __len__(self):
+    def __len__(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
         return len(self.__transitions)
 
-    def get_transitions(self):
+    def amount_rounds(self) -> int:
+        return self.__amount_rounds
+
+    def get_transitions(self) -> List[Transition]:
         return self.__transitions
 
-    def copy(self):
+    def copy(self) -> 'SystemTransition':
         transitions = [tr.copy() for tr in self.__transitions]
         return SystemTransition(*transitions)
 
-    def apply_condition(self, condition):
+    def apply_condition(self, condition: Condition) -> None:
         assert isinstance(condition, Condition)
         for transition in self.__transitions:
             # logger.debug("Before transition %s ||| condition %s" % (str(transition), str(condition))
             transition.apply_condition(condition)
             # logger.debug("After transition %s ||| condition %s" % (str(transition), str(condition))
 
-    def apply_conditions(self, conditions):
+    def apply_conditions(self, conditions: List[Condition]) -> None:
         assert isinstance(conditions, list)
         for condition in conditions:
             self.apply_condition(condition)
@@ -146,10 +151,11 @@ class SystemTransition(object):
                 return None
 
             transition = transitions[x]
-            logger.debug("\nAnalyse transition ", str(transition))
+            logger.debug("\nAnalyse transition {}".format(transition))
             left = transition.get_left_side()
             right = transition.get_right_side()
-            assert len(left) > 0 and len(right) > 0
+            # TODO: DO NOT INCLUDE ESTIMATION FOR THAT TRANSITION
+            #assert len(left) > 0 and len(right) > 0
 
             # 2 sides does not have unknowns
             if not left.contains_unknown() and not right.contains_unknown():

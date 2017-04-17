@@ -2,6 +2,9 @@ from logger import logger
 from system_transition import SystemTransition
 from conditions import CustomConditions, Condition
 from common_condition_generator import CommonConditionGenerator
+from variable import Variable, TypeVariable
+from transition import Transition, BlockFunction
+from side import Side
 from typing import List
 
 
@@ -15,7 +18,7 @@ def non_zero_conds_to_str(non_zero_conds: List[Condition]) -> str:
 
 def main(system, inputs, outputs):
     ccond_generator = CommonConditionGenerator()
-    logger.info("Basic system is: \n{}\n\n".format())
+    logger.info("Basic system is: \n{}\n\n".format(system))
     logger.info("Creating common conditions...")
 
     input_conditions = ccond_generator.gen_all_common_conditions(inputs)
@@ -53,11 +56,11 @@ def main(system, inputs, outputs):
             for x in out_zero_conds:
                 new_system.apply_condition(x)
 
-            logger.info("after apply conditions: \n", new_system)
+            logger.info("after apply conditions: \n{}".format(new_system))
             custom_cond = CustomConditions()
             new_system.simplify_with_custom_conditions(custom_cond)
-            logger.info("after system analyze: \n", new_system)
-            logger.info("all custom conditions: ",  custom_cond)
+            logger.info("after system analyze: \n{}".format(new_system))
+            logger.info("all custom conditions: {}".format(custom_cond))
             if custom_cond.exist_contradiction(common_non_zero_conds):
                 logger.info("New system has contradiction conditions.")
                 logger.debug("FAIL SYSTEM!!!!")
@@ -67,11 +70,11 @@ def main(system, inputs, outputs):
                 estimated += 1
                 case_results.append(("p^%d" % len(new_system), pow(0.5, len(new_system))))
             else:
-                logger.info("all custom conditions: ",  custom_cond)
-                logger.info("after applying conditions: \n", new_system)
+                logger.info("all custom conditions: {}".format(custom_cond))
+                logger.info("after applying conditions: \n{}".format(new_system))
                 logger.debug("=" * 50 + "end" + "=" * 50)
                 SystemTransition.estimate(
-                    new_system, custom_cond, in_cond, out_cond,
+                    new_system, custom_cond, (in_zero_conds, in_non_zero_conds), (out_zero_conds, out_non_zero_conds),
                     common_non_zero_conds, case_results, False)
 
             logger.debug("case res = " + str(case_results))
@@ -81,23 +84,27 @@ def main(system, inputs, outputs):
     logger.info("Total fails is %d" % fails)
     logger.info("Total estimated is %d" % estimated)
 
-    uniq_estim = {}
-    for x in range(len(results)):
-        put_normalise_to_dict(results[x], uniq_estim, x)
-
-    res = [(key, value) for key, value in list(uniq_estim.items())]
-    return sorted(res, key=lambda pair: pair[0])
+    return results
 
 if __name__ == "__main__":
-    with open('4_block_FC_res', 'w+', 0) as f:
-        for key, value in list(four_blocks_systems.items()):
-            res = main(value, [a1, a2, a3, a4], [g1, g2, g3, g4])
-            f.write("%s rounds: \n" % str(key))
-            for pair in res:
-                est = "%s   [case %d]\n" % (pair[0], pair[1])
-                logger.info(est)
-                f.write(est)
-            f.flush()
-            f.write("Was analyze %d cases.\n\n" % SystemTransition.amount_cases)
-            SystemTransition.amount_cases = 0  # reset for future cases
-            f.flush()
+
+    a1 = Variable(TypeVariable.INPUT)
+    a2 = Variable(TypeVariable.INPUT)
+
+    b1 = Variable(TypeVariable.UNKNOWN)
+
+    c1 = Variable(TypeVariable.OUTPUT)
+    c2 = Variable(TypeVariable.OUTPUT)
+
+    system = SystemTransition(Transition(Side(a1), Side(b1, a2), BlockFunction('F', 'p')),
+                              Transition(Side(a2), Side(c2, b1), BlockFunction('G', 'q')),
+                              Transition(Side(b1), Side(c1, c2), BlockFunction('F', 'p')))
+
+    res = main(system, [a1, a2], [c1, c2])
+    logger.info("System with %d rounds: " % system.amount_rounds())
+    for pair in res:
+        for est in pair:
+            logger.info("{}".format(est))
+
+    logger.info("Was analyze %d cases.\n\n" % SystemTransition.amount_cases)
+    SystemTransition.amount_cases = 0  # reset for future cases
