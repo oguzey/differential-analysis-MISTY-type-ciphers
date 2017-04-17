@@ -19,7 +19,7 @@ class StateConditions(Enum):
             StateConditions.IS_ZERO: '=',
             StateConditions.IS_NOT_ZERO: '!=',
             StateConditions.IS_EQUAL: '='
-        }.get(self._value_, '')
+        }.get(self.value, '')
 
 
 class CompareCondition(Enum):
@@ -148,13 +148,13 @@ class Condition(object):
 
     @staticmethod
     def create_zero_condition(side: Side) -> 'Condition':
-        assert isinstance(side, Side) and len(side) > 0
+        assert isinstance(side, Side) and not side.is_empty()
         var = side.pop_the_latest_variable()
         return Condition(Side(var), side, StateConditions.IS_ZERO if side.is_empty() else StateConditions.IS_EQUAL)
 
     @staticmethod
     def create_non_zero_condition(side: Side) -> 'Condition':
-        assert isinstance(side, Side) and len(side) > 0
+        assert isinstance(side, Side) and not side.is_empty()
         return Condition(side, Side(), StateConditions.IS_NOT_ZERO)
 
 
