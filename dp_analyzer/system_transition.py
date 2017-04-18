@@ -1,7 +1,9 @@
 from transition import Transition
-from conditions import Condition, ConditionException
+from conditions import Condition, ConditionException, CustomConditions
 from logger import logger
 from typing import List
+from common_condition_generator import zero_conds_to_str, non_zero_conds_to_str
+from enum import Enum
 
 
 class SystemTransition(object):
@@ -11,6 +13,10 @@ class SystemTransition(object):
         assert all([isinstance(x, Transition) for x in transitions])
         self.__transitions = list(transitions)
         self.__amount_rounds = len(self.__transitions)
+        self._common_zero_conds = None
+        self._common_non_zero_conds = None
+        self._is_estimated = None
+        self._mark = None
 
     def __str__(self) -> str:
         system = ""
@@ -21,6 +27,13 @@ class SystemTransition(object):
     def __len__(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
         return len(self.__transitions)
+
+    def get_mark(self):
+        return self._mark
+
+    def set_common_conditions(self, in_zero_cond, in_non_zero_cond, out_zero_cond, out_non_zero_cond):
+        self._common_zero_conds = (in_zero_cond, out_zero_cond)
+        self._common_non_zero_conds = (in_non_zero_cond, out_non_zero_cond)
 
     def amount_rounds(self) -> int:
         return self.__amount_rounds
@@ -353,3 +366,44 @@ class SystemTransition(object):
             logger.debug("Fork end")
 
         logger.debug("#"*50 + "end estimation" + "#"*50)
+
+    def get_estimate(self):
+        logger.debug("=" * 50 + "start" + "=" * 50)
+        # Apply all zero conditions and drop them as variables became zero
+        in_zero_conds, out_zero_conds = self._common_zero_conds
+        for x in in_zero_conds:
+            self.apply_condition(x)
+        for x in out_zero_conds:
+            self.apply_condition(x)
+
+        logger.info("after apply conditions: \n{}".format(self))
+        custom_cond = CustomConditions()
+        self.simplify_with_custom_conditions(custom_cond)
+        logger.info("after system analyze: \n{}".format(self))
+        logger.info("all custom conditions: {}".format(custom_cond))
+
+        in_non_zero_conds, out_non_zero_conds = self._common_non_zero_conds
+        common_non_zero_conds = list(in_non_zero_conds)
+        common_non_zero_conds.extend(out_non_zero_conds)
+
+        logger.info("Input condition: \n\t{}\n\t{}".format(zero_conds_to_str(in_zero_conds),
+                                                           non_zero_conds_to_str(in_non_zero_conds)))
+        logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),
+                                                            non_zero_conds_to_str(out_non_zero_conds)))
+
+        if custom_cond.exist_contradiction(common_non_zero_conds):
+            logger.info("New system has contradiction conditions.")
+            logger.debug("FAIL SYSTEM!!!!")
+            self._is_estimated = False
+            self._mark = None
+        elif self.do_fast_estimation(custom_cond, common_non_zero_conds):
+            logger.info("CAN BE ESTIMATED  p^%d!!! All primitive transitions" % len(self))
+            self._is_estimated = True
+            self._mark = ("p^%d" % len(self), pow(0.5, len(self)))
+        else:
+            logger.info("all custom conditions: {}".format(custom_cond))
+            logger.info("after applying conditions: \n{}".format(self))
+            logger.debug("=" * 50 + "end" + "=" * 50)
+            # SystemTransition.estimate(
+            #     self, custom_cond, (in_zero_conds, in_non_zero_conds), (out_zero_conds, out_non_zero_conds),
+            #     common_non_zero_conds, case_results, False)

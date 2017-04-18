@@ -61,3 +61,11 @@ class CommonConditionGenerator(object):
                     none_zero_conds.append(Condition(Side(variables[index]), Side(), StateConditions.IS_NOT_ZERO))
             cconditions.append((zero_conds, none_zero_conds))
         return cconditions
+
+
+def zero_conds_to_str(zero_conds: List[Condition]) -> str:
+    return "Zero condition: %s" % "; ".join(map(str, zero_conds))
+
+
+def non_zero_conds_to_str(non_zero_conds: List[Condition]) -> str:
+    return "Non zero condition: %s" % "; ".join(map(str, non_zero_conds))
