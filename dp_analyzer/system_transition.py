@@ -58,34 +58,26 @@ class SystemTransition(object):
             self.apply_condition(condition)
 
     def analyse_and_set_custom_conditions(self, custom_cond):
-        count = 0
         null_trans = []
         rm = []
         for transition in self.__transitions:
+            # TODO: refactor me.
             if transition.has_both_empty_side():
-                # logger.debug("will rm == ", transition
                 rm.append(transition)
             elif transition.has_empty_side():
-                # logger.debug("emty == ", transition
                 null_trans.append(transition)
-                count += 1
-
-        for transition in null_trans:
-            self.__transitions.remove(transition)
 
         map(self.__transitions.remove, rm)
+        for transition in null_trans:
+            self.__transitions.remove(transition)
+            custom_cond.append_condition(transition.make_zero_condition())
 
-        for trans in null_trans:
-            custom_cond.append_condition(trans.make_condition())
-        return count
+        return len(null_trans)
 
     def apply_custom_conditions(self, custom_conditions):
         for index in range(len(custom_conditions) - 1, -1, -1):
             condition = custom_conditions.get_condition(index)
             self.apply_condition(condition)
-
-    def has_condition(self):
-        return any([tr.has_empty_side() for tr in self.__transitions])
 
     def count_unknown_vars(self):
         unknowns = []

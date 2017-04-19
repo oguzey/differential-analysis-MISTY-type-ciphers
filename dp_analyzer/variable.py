@@ -31,7 +31,6 @@ class Variable(object):
         self.__id = Variable.__id__[type_var]  # type: int
         Variable.__id__[type_var] += 1
         self.__type = type_var  # type: TypeVariable
-        self.__is_zero = False  # type: bool
         self.__hash = Variable.__k__ * int(self.__type.value) + self.__id  # type: int
 
     def __eq__(self, other: 'Variable') -> bool:
@@ -54,12 +53,6 @@ class Variable(object):
     def __hash__(self) -> int:
         return self.__hash
 
-    def set_to_zero(self) -> None:
-        self.__is_zero = True
-
-    def is_zero(self) -> bool:
-        return self.__is_zero
-
     def is_unknown(self) -> bool:
         return self.__type == TypeVariable.UNKNOWN
 
@@ -71,9 +64,6 @@ class Variable(object):
 
     def has_type(self, type_var: TypeVariable) -> bool:
         return self.__type == type_var
-
-    def reset(self) -> None:
-        self.__is_zero = False
 
     def get_id(self) -> int:
         return self.__id

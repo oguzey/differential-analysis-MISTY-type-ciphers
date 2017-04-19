@@ -67,7 +67,7 @@ class Transition(object):
     def has_both_empty_side(self) -> bool:
         return self.__left.is_empty() and self.__right.is_empty()
 
-    def make_condition(self) -> Union[Condition, NoReturn]:
+    def make_zero_condition(self) -> Union[Condition, NoReturn]:
 
         if self.__left.is_empty() and not self.__right.is_empty():
             non_zero_side = self.__right
