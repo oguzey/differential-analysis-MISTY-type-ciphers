@@ -10,6 +10,14 @@ import multiprocessing as mp
 import time
 
 
+def zero_conds_to_str(zero_conds: List[Condition]) -> str:
+    return "Zero condition: %s" % "; ".join(map(str, zero_conds))
+
+
+def non_zero_conds_to_str(non_zero_conds: List[Condition]) -> str:
+    return "Non zero condition: %s" % "; ".join(map(str, non_zero_conds))
+
+
 def worker(system, input_tasks, done_tasks):
     logger.info('[{}.{}] got system \n{}'.format(mp.current_process().name, mp.current_process().pid, system))
     # TODO: pass input_tasks to estimate method to reduce timeout waiting new tasks
@@ -37,6 +45,10 @@ def main(system, inputs, outputs):
     logger.info("Created input_tasks = {}, done_tasks = {}".format(input_tasks, done_tasks))
     for in_zero_conds, in_non_zero_conds in input_conditions:
         for out_zero_conds, out_non_zero_conds in output_conditions:
+            logger.info("Input condition: \n\t{}\n\t{}".format(zero_conds_to_str(in_zero_conds),
+                                                               non_zero_conds_to_str(in_non_zero_conds)))
+            logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),
+                                                                non_zero_conds_to_str(out_non_zero_conds)))
             new_system = system.copy()
             new_system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
             input_tasks.put(new_system)

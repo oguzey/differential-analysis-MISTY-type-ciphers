@@ -244,7 +244,7 @@ class CustomConditions(object):
                 if c.compare_conditions(self_cond) == CompareCondition.CONTRADICTION:
                     logger.debug("Found contradictions %s and %s" % (str(c), str(self_cond)))
                     return True
-        logger.debug("not found contra with common_conditions")
+        logger.debug("Contradiction not found with common_conditions")
         return self.exist_contradiction_internal()
 
     def exist_contradiction_internal(self):
@@ -256,7 +256,7 @@ class CustomConditions(object):
                 if first.compare_conditions(second) == CompareCondition.CONTRADICTION:
                     logger.debug("Found contradictions %s and %s" % (str(first), str(second)))
                     return True
-        logger.debug("not found contra")
+        logger.debug("Contradictions not found")
         return False
 
     def copy(self):
