@@ -6,8 +6,16 @@ from common_condition_generator import zero_conds_to_str, non_zero_conds_to_str
 from enum import Enum
 
 
+class SystemTransitionType(Enum):
+    """
+    The class contains value to mark SystemTransition as intermediate link or final link.
+    These need to collect estimation after analyzing.
+    """
+    INTERMEDIATE = 0
+    LAST = 1
+
+
 class SystemTransition(object):
-    amount_cases = 0
 
     def __init__(self, *transitions: Transition) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
@@ -17,6 +25,12 @@ class SystemTransition(object):
         self._common_non_zero_conds = None
         self._is_estimated = None
         self._mark = None
+        """
+        It is link to other object of SystemTransition which is gave birth this system.
+        It is using to collect results.
+        """
+        self._parent = None  # type: SystemTransition
+        self._type = None  # type: SystemTransitionType
 
     def __str__(self) -> str:
         system = ""
@@ -30,6 +44,14 @@ class SystemTransition(object):
 
     def get_mark(self):
         return self._mark
+
+    def is_intermediate(self) -> bool:
+        assert self._type in [SystemTransitionType.INTERMEDIATE, SystemTransitionType.LAST]
+        return self._type == SystemTransitionType.INTERMEDIATE
+
+    def is_last(self):
+        assert self._type in [SystemTransitionType.INTERMEDIATE, SystemTransitionType.LAST]
+        return self._type == SystemTransitionType.LAST
 
     def set_common_conditions(self, in_zero_cond, in_non_zero_cond, out_zero_cond, out_non_zero_cond):
         self._common_zero_conds = (in_zero_cond, out_zero_cond)
@@ -56,23 +78,6 @@ class SystemTransition(object):
         assert isinstance(conditions, list)
         for condition in conditions:
             self.apply_condition(condition)
-
-    def analyse_and_set_custom_conditions(self, custom_cond):
-        null_trans = []
-        rm = []
-        for transition in self.__transitions:
-            # TODO: refactor me.
-            if transition.has_both_empty_side():
-                rm.append(transition)
-            elif transition.has_empty_side():
-                null_trans.append(transition)
-
-        map(self.__transitions.remove, rm)
-        for transition in null_trans:
-            self.__transitions.remove(transition)
-            custom_cond.append_condition(transition.make_zero_condition())
-
-        return len(null_trans)
 
     def apply_custom_conditions(self, custom_conditions):
         for index in range(len(custom_conditions) - 1, -1, -1):
@@ -123,13 +128,30 @@ class SystemTransition(object):
 
         return count_simple == len(self.__transitions)
 
+    def analyse_and_set_custom_conditions(self, custom_cond):
+        null_trans = []
+        rm = []
+        for transition in self.__transitions:
+            # TODO: refactor me.
+            if transition.has_both_empty_side():
+                rm.append(transition)
+            elif transition.has_empty_side():
+                null_trans.append(transition)
+
+        map(self.__transitions.remove, rm)
+        for transition in null_trans:
+            self.__transitions.remove(transition)
+            custom_cond.append_condition(transition.make_zero_condition())
+
+        return len(null_trans)
+
     def simplify_with_custom_conditions(self, cust_cond):
-        count_add_cc = 1  # by default
-        while count_add_cc > 0:
+        amount_new_cc = 1
+        while amount_new_cc > 0:
             # logger.debug("[simplify] New custom conditions " + str(cust_cond)
             self.apply_custom_conditions(cust_cond)
             # logger.debug("[simplify] New system apply_custom_conditions \n" + str(self)
-            count_add_cc = self.analyse_and_set_custom_conditions(cust_cond)
+            amount_new_cc = self.analyse_and_set_custom_conditions(cust_cond)
             # logger.debug("[simplify] New system " + str(self)
 
     @staticmethod
@@ -299,8 +321,6 @@ class SystemTransition(object):
             call_as_fork,
             was_fail
             ):
-
-        SystemTransition.amount_cases += 1
 
         unknown_vars = system.count_unknown_vars()
         dct = {
