@@ -1,9 +1,9 @@
 from transition import Transition
 from conditions import Condition, ConditionException, CustomConditions
 from logger import logger
-from typing import List, Callable
+from typing import List, Callable, Any
 from enum import Enum
-from
+
 
 class SystemTransitionType(Enum):
     """
@@ -38,7 +38,7 @@ class SystemTransition(object):
             system += "%d) %s\n" % (ind + 1, str(self.__transitions[ind]))
         return system
 
-    def __len__(self) -> int:
+    def get_amount_rounds(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
         return len(self.__transitions)
 
@@ -63,7 +63,7 @@ class SystemTransition(object):
         self._common_non_zero_conds = in_non_zero_cond
         self._common_non_zero_conds.extend(out_non_zero_cond)
 
-    def dump_system(self, log_fn: Callable[[str], ...], msg: str='') -> None:
+    def dump_system(self, log_fn: Callable[[str], None], msg: str='') -> None:
         log_fn('{0} System dump start {0}'.format('-'*20))
         if msg:
             log_fn(msg)
@@ -73,13 +73,7 @@ class SystemTransition(object):
         log_fn('Non zero common cond: {}'.format("; ".join(map(str, self._common_non_zero_conds))))
         log_fn('{0} System dump end {0}'.format('-' * 20))
 
-    def amount_rounds(self) -> int:
-        return self.__amount_rounds
-
-    def get_transitions(self) -> List[Transition]:
-        return self.__transitions
-
-    def clone(self, set_parent: bool=False):
+    def __clone(self, set_parent: bool=False) -> 'SystemTransition':
         new_system = SystemTransition([tr.copy() for tr in self.__transitions])
         new_system._common_zero_conds = [cond.copy() for cond in self._common_zero_conds]
         new_system._common_non_zero_conds = [cond.copy() for cond in self._common_non_zero_conds]
@@ -89,24 +83,19 @@ class SystemTransition(object):
             self._type = SystemTransitionType.INTERMEDIATE
         return new_system
 
-    def apply_condition(self, condition: Condition) -> None:
+    def __apply_condition(self, condition: Condition) -> None:
         assert isinstance(condition, Condition)
         for transition in self.__transitions:
             # logger.debug("Before transition %s ||| condition %s" % (str(transition), str(condition))
             transition.apply_condition(condition)
             # logger.debug("After transition %s ||| condition %s" % (str(transition), str(condition))
 
-    def apply_conditions(self, conditions: List[Condition]) -> None:
-        assert isinstance(conditions, list)
-        for condition in conditions:
-            self.apply_condition(condition)
-
-    def apply_custom_conditions(self, custom_conditions):
+    def __apply_custom_conditions(self, custom_conditions: CustomConditions) -> None:
         for index in range(len(custom_conditions) - 1, -1, -1):
             condition = custom_conditions.get_condition(index)
-            self.apply_condition(condition)
+            self.__apply_condition(condition)
 
-    def count_unknown_vars(self):
+    def __count_unknown_vars(self) -> int:
         unknowns = []
         for trans in self.__transitions:
             unknowns.extend(trans.get_left_side().get_unknowns_id())
@@ -117,7 +106,7 @@ class SystemTransition(object):
         # logger.debug("[count_unknown_vars] len(%s) = %d" % (str(s), len(s))
         return len(s)
 
-    def do_fast_estimation(self, custom_cond, common_cond_nz):
+    def __do_fast_estimation(self, custom_cond: CustomConditions, common_cond_nz: List[Condition]) -> bool:
         nz_sides = [cond.get_left_side() for cond in common_cond_nz]
 
         count_simple = 0
@@ -150,7 +139,7 @@ class SystemTransition(object):
 
         return count_simple == len(self.__transitions)
 
-    def analyse_and_set_custom_conditions(self, custom_cond):
+    def __analyse_and_set_custom_conditions(self, custom_conds: CustomConditions) -> int:
         null_trans = []
         rm = []
         for transition in self.__transitions:
@@ -163,60 +152,58 @@ class SystemTransition(object):
         map(self.__transitions.remove, rm)
         for transition in null_trans:
             self.__transitions.remove(transition)
-            custom_cond.append_condition(transition.make_zero_condition())
+            custom_conds.append_condition(transition.make_zero_condition())
 
         return len(null_trans)
 
-    def simplify_with_custom_conditions(self, cust_cond):
+    def __simplify_with_custom_conditions(self, custom_conds: CustomConditions) -> None:
         amount_new_cc = 1
         while amount_new_cc > 0:
             # logger.debug("[simplify] New custom conditions " + str(cust_cond)
-            self.apply_custom_conditions(cust_cond)
+            self.__apply_custom_conditions(custom_conds)
             # logger.debug("[simplify] New system apply_custom_conditions \n" + str(self)
-            amount_new_cc = self.analyse_and_set_custom_conditions(cust_cond)
+            amount_new_cc = self.__analyse_and_set_custom_conditions(custom_conds)
             # logger.debug("[simplify] New system " + str(self)
-
-    def verify(self) -> bool:
-        # Apply all zero conditions and drop them as variables became zero
-        for x in self._common_zero_conds:
-            self.apply_condition(x)
-
-        self.dump_system(logger.debug, 'System after apply all zero conditions')
-
-        self._custom_conds = CustomConditions()
-        self.simplify_with_custom_conditions(self._custom_conds)
-
-        self.dump_system(logger.debug, 'System after apply first custom conditions')
-
-        if self._custom_conds.exist_contradiction(self._common_non_zero_conds):
-            logger.info("System has contradiction conditions.")
-            self._type = SystemTransitionType.LAST
-            self._is_estimated = False
-            self._mark = None
-            return False
-        elif self.do_fast_estimation(self._custom_conds, self._common_non_zero_conds):
-            logger.info("System was estimated. All transitions are primitive.")
-            self.dump_system(logger.debug, 'System was estimated after fast estimation')
-            self._type = SystemTransitionType.LAST
-            self._is_estimated = True
-            # TODO: add correct mark
-            self._mark = ("p^%d" % len(self), pow(0.5, len(self)))
-            return True
-        else:
-            self.dump_system(logger.debug, 'System after applying conditions')
-            return True
 
     def __set_fail_state(self) -> None:
         """
         Set fail state during estimation
         :return: None
         """
-        assert self._type is None or self._type == SystemTransitionType.INTERMEDIATE
+        assert self._type is None or self._type == SystemTransitionType.INTERMEDIATE, "Type is {}".format(self._type)
         self._type = SystemTransitionType.LAST if self._type is None else self._type
         self._is_estimated = False
         self._mark = None
 
-    def new_estimate(self, append_system_fn: Callable[..., ['SystemTransition']]) -> None:
+    def verify(self) -> bool:
+        # Apply all zero conditions and drop them as variables became zero
+        for x in self._common_zero_conds:
+            self.__apply_condition(x)
+
+        self.dump_system(logger.debug, 'System after apply all zero conditions')
+
+        self._custom_conds = CustomConditions()
+        self.__simplify_with_custom_conditions(self._custom_conds)
+
+        self.dump_system(logger.debug, 'System after apply first custom conditions')
+
+        if self._custom_conds.exist_contradiction(self._common_non_zero_conds):
+            logger.info("System has contradiction conditions.")
+            self.__set_fail_state()
+            return False
+        elif self.__do_fast_estimation(self._custom_conds, self._common_non_zero_conds):
+            logger.info("System was estimated. All transitions are primitive.")
+            self.dump_system(logger.debug, 'System was estimated after fast estimation')
+            self._type = SystemTransitionType.LAST
+            self._is_estimated = True
+            # TODO: add correct mark
+            self._mark = ("p^%d" % self.get_amount_rounds(), pow(0.5, self.get_amount_rounds()))
+            return True
+        else:
+            self.dump_system(logger.debug, 'System after applying conditions')
+            return True
+
+    def new_estimate(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
         count_triviality = 0
         count_with_unknowns = 0
         # little optimization for check contradiction
@@ -302,12 +289,12 @@ class SystemTransition(object):
                 left_zc = Condition.create_zero_condition(left.copy())
                 right_zc = Condition.create_zero_condition(right.copy())
                 logger.debug("New zero conditions %s and %s" % (str(left_zc), str(right_zc)))
-                new_system = self.clone(set_parent=fork)
+                new_system = self.__clone(set_parent=fork)
                 new_system.dump_system(logger.debug, "New system")
                 try:
                     new_system._custom_conds.append_condition(left_zc)
                     new_system._custom_conds.append_condition(right_zc)
-                    new_system.simplify_with_custom_conditions(new_system._custom_conds)
+                    new_system.__simplify_with_custom_conditions(new_system._custom_conds)
                     new_system.dump_system(logger.debug, "New system after simplify")
                     if new_system._custom_conds.exist_contradiction(new_system._common_non_zero_conds):
                         logger.info("System has contradiction conditions")
@@ -341,7 +328,12 @@ class SystemTransition(object):
                 continue
 
         # TODO: Estimate system at the end function
-        pass
+        # TODO: add correct mark
+        expo = count_triviality + count_with_unknowns - self.__count_unknown_vars()
+        self._mark = ("p^%d" % expo, pow(0.5, expo))
+        self._type = SystemTransitionType.LAST if self._type is None else self._type
+        self._is_estimated = True
+        return
 
 
     # @staticmethod

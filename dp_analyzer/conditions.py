@@ -2,7 +2,8 @@ from enum import Enum
 from variable import Variable
 from side import Side
 from logger import logger
-from typing import List, Tuple
+from typing import List, Tuple, Union
+from mypy_extensions import NoReturn
 
 
 class ConditionException(Exception):
@@ -163,23 +164,23 @@ class CustomConditions(object):
     """
     conditions which is created during applying CommonConditions and assumption
     """
-    def __init__(self):
-        self.__conditions = []
+    def __init__(self) -> None:
+        self.__conditions = []  # type: List[Condition]
 
-    def __str__(self):
+    def __str__(self) -> str:
         str_cc = "\n\t".join(map(str, self.__conditions))
         return "{ \n\t" + str_cc + " \n}"
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__conditions)
 
-    def __is_exist_conditions(self, cond):
+    def __is_exist_conditions(self, cond: Condition) -> bool:
         for condition in self.__conditions:
             if cond == condition:
                 return True
         return False
 
-    def __update_all(self):
+    def __update_all(self) -> Union[NoReturn, None]:
         length = len(self.__conditions)
         for x in range(length):
             first = self.__conditions[x]
@@ -190,7 +191,7 @@ class CustomConditions(object):
                     if not second.is_correct():
                         raise ConditionException("Bad condition %s" % str(second))
 
-    def __update_conditions(self):
+    def __update_conditions(self) -> None:
         self.__update_all()
         # logger.debug("[append_condition] after __update_all " + str(self)
         self.remove_duplicate_conditions()
@@ -200,7 +201,7 @@ class CustomConditions(object):
         # logger.debug("[append_condition] after exist_contradiction " + str(self)
         self.remove_useless()
 
-    def append_condition(self, condition):
+    def append_condition(self, condition: Condition) -> None:
         logger.debug("[append_condition] append " + str(condition))
         # logger.debug("[append_condition] to " + str(self)
         if not self.__is_exist_conditions(condition):
@@ -209,7 +210,7 @@ class CustomConditions(object):
         self.__update_conditions()
         logger.debug("[append_condition] cc became " + str(self))
 
-    def remove_duplicate_conditions(self):
+    def remove_duplicate_conditions(self) -> None:
         rm = []
         length = len(self.__conditions)
         for x in range(length):
@@ -223,7 +224,7 @@ class CustomConditions(object):
             logger.debug("[remove_duplicate_conditions] will remove " + str(cond))
             self.__conditions.remove(cond)
 
-    def remove_useless(self):
+    def remove_useless(self) -> None:
         rm = []
         for cond in self.__conditions:
             if cond.is_useless():
@@ -232,11 +233,11 @@ class CustomConditions(object):
             logger.debug("[remove_useless] will remove " + str(cond))
             self.__conditions.remove(cond)
 
-    def get_condition(self, index):
+    def get_condition(self, index: int) -> 'Condition':
         assert index <= len(self.__conditions)
         return self.__conditions[index]
 
-    def exist_contradiction(self, common_conditions):
+    def exist_contradiction(self, common_conditions: List[Condition]) -> bool:
         assert isinstance(common_conditions, list)
 
         for self_cond in self.__conditions:
@@ -247,7 +248,7 @@ class CustomConditions(object):
         logger.debug("Contradiction not found with common_conditions")
         return self.exist_contradiction_internal()
 
-    def exist_contradiction_internal(self):
+    def exist_contradiction_internal(self) -> bool:
         length = len(self.__conditions)
         for x in range(length):
             first = self.__conditions[x]
@@ -259,7 +260,7 @@ class CustomConditions(object):
         logger.debug("Contradictions not found")
         return False
 
-    def copy(self):
+    def copy(self) -> 'CustomConditions':
         new_cc = CustomConditions()
         for condition in self.__conditions:
             new_cc.__conditions.append(condition.copy())
@@ -268,7 +269,7 @@ class CustomConditions(object):
 
         return new_cc
 
-    def is_side_non_zero(self, side):
+    def is_side_non_zero(self, side: Side) -> bool:
         for condition in self.__conditions:
             if condition.get_state() == StateConditions.IS_NOT_ZERO and (
                     condition.get_left_side() == side):

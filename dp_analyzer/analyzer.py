@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from logger import logger
 from system_transition import SystemTransition
 from conditions import CustomConditions, Condition
@@ -19,17 +21,24 @@ def non_zero_conds_to_str(non_zero_conds: List[Condition]) -> str:
 
 
 def worker(system, input_tasks, done_tasks):
+    def append_to_input(x):
+        input_tasks.put(x)
+        logger.info("AAAAPPPPPPPPPPPPPPPPEND")
     logger.info('[{}.{}] got system \n{}'.format(mp.current_process().name, mp.current_process().pid, system))
-    # TODO: pass input_tasks to estimate method to reduce timeout waiting new tasks
-    system.verify()
-    system.new_estimate(lambda x: input_tasks.put(x))
+    if system.verify():
+        try:
+            system.new_estimate(append_to_input)
+        except Exception as ex:
+            logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(type(ex)))
+            logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(ex))
+            raise ex
     # after get_estimate we should get estimate so we can add the system to done_tasks
     done_tasks.put(system)
     input_tasks.put('no-task')
 
 
-def main(system, inputs, outputs):
-    logger.info("Basic system is: \n{}\n\n".format(system))
+def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
+    logger.info("Basic transitions are: \n{}\n\n".format('\n'.join(map(str, transitions))))
 
     logger.info("Creating common conditions...")
     ccond_generator = CommonConditionGenerator()
@@ -37,7 +46,6 @@ def main(system, inputs, outputs):
     output_conditions = ccond_generator.gen_all_common_conditions(outputs)
 
     assert len(input_conditions) == len(output_conditions)
-    logger.info("Amount conditions is %d" % len(input_conditions))
 
     logger.info("Generating systems...")
     mp_manager = mp.Manager()
@@ -50,26 +58,33 @@ def main(system, inputs, outputs):
                                                                non_zero_conds_to_str(in_non_zero_conds)))
             logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),
                                                                 non_zero_conds_to_str(out_non_zero_conds)))
-            # TODO: change creating system due to clone method
-            new_system = system.copy()
-            new_system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
-            input_tasks.put(new_system)
+            system = SystemTransition([tr.copy() for tr in transitions])
+            system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
+            input_tasks.put(system)
 
+    logger.info("Total {} system was generated with basic common conditions".format(input_tasks.qsize()))
     logger.info("Estimating...")
-    with mp.Pool(processes=mp.cpu_count()) as pool:
-        logger.debug('Pool with {} process created'.format(mp.cpu_count()))
-
-        counter = 1
-        system = input_tasks.get_nowait()
-        pool.apply_async(worker, (system, input_tasks, done_tasks))
-
-        while counter > 0:
-            system = input_tasks.get(block=True)
+    if amount_workers == 1:
+        while input_tasks.qsize() > 0:
+            system = input_tasks.get_nowait()
             if system == 'no-task':
-                counter -= 1
-            else:
-                counter += 1
-                pool.apply_async(worker, (system, input_tasks, done_tasks))
+                continue
+            worker(system, input_tasks, done_tasks)
+    else:
+        with mp.Pool(processes=amount_workers) as pool:
+            logger.debug('Pool with {} process created'.format(mp.cpu_count()))
+
+            counter = 1
+            system = input_tasks.get_nowait()
+            pool.apply_async(worker, (system, input_tasks, done_tasks))
+
+            while counter > 0:
+                system = input_tasks.get(block=True)
+                if system == 'no-task':
+                    counter -= 1
+                else:
+                    counter += 1
+                    pool.apply_async(worker, (system, input_tasks, done_tasks))
 
     logger.info("Done total tasks - {}".format(done_tasks.qsize()))
     logger.info("Results:")
@@ -90,15 +105,8 @@ if __name__ == "__main__":
     c1 = Variable(TypeVariable.OUTPUT)
     c2 = Variable(TypeVariable.OUTPUT)
 
-    st = SystemTransition([Transition(Side(a1), Side(b1, a2), BlockFunction('F', 'p')),
-                           Transition(Side(a2), Side(c2, b1), BlockFunction('G', 'q')),
-                           Transition(Side(b1), Side(c1, c2), BlockFunction('F', 'p'))])
+    trans = [Transition(Side(a1), Side(b1, a2), BlockFunction('F', 'p')),
+             Transition(Side(a2), Side(c2, b1), BlockFunction('G', 'q')),
+             Transition(Side(b1), Side(c1, c2), BlockFunction('F', 'p'))]
 
-    main(st, [a1, a2], [c1, c2])
-    # logger.info("System with %d rounds: " % system.amount_rounds())
-    # for pair in res:
-    #     for est in pair:
-    #         logger.info("{}".format(est))
-    #
-    # logger.info("Was analyze %d cases.\n\n" % SystemTransition.amount_cases)
-    # SystemTransition.amount_cases = 0  # reset for future cases
+    main(trans, [a1, a2], [c1, c2], amount_workers=1)
