@@ -21,7 +21,8 @@ def non_zero_conds_to_str(non_zero_conds: List[Condition]) -> str:
 def worker(system, input_tasks, done_tasks):
     logger.info('[{}.{}] got system \n{}'.format(mp.current_process().name, mp.current_process().pid, system))
     # TODO: pass input_tasks to estimate method to reduce timeout waiting new tasks
-    system.get_estimate()
+    system.verify()
+    system.new_estimate(lambda x: input_tasks.put(x))
     # after get_estimate we should get estimate so we can add the system to done_tasks
     done_tasks.put(system)
     input_tasks.put('no-task')
@@ -49,6 +50,7 @@ def main(system, inputs, outputs):
                                                                non_zero_conds_to_str(in_non_zero_conds)))
             logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),
                                                                 non_zero_conds_to_str(out_non_zero_conds)))
+            # TODO: change creating system due to clone method
             new_system = system.copy()
             new_system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
             input_tasks.put(new_system)
@@ -88,9 +90,9 @@ if __name__ == "__main__":
     c1 = Variable(TypeVariable.OUTPUT)
     c2 = Variable(TypeVariable.OUTPUT)
 
-    st = SystemTransition(Transition(Side(a1), Side(b1, a2), BlockFunction('F', 'p')),
-                              Transition(Side(a2), Side(c2, b1), BlockFunction('G', 'q')),
-                              Transition(Side(b1), Side(c1, c2), BlockFunction('F', 'p')))
+    st = SystemTransition([Transition(Side(a1), Side(b1, a2), BlockFunction('F', 'p')),
+                           Transition(Side(a2), Side(c2, b1), BlockFunction('G', 'q')),
+                           Transition(Side(b1), Side(c1, c2), BlockFunction('F', 'p'))])
 
     main(st, [a1, a2], [c1, c2])
     # logger.info("System with %d rounds: " % system.amount_rounds())
