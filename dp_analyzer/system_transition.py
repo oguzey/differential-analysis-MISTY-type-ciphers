@@ -3,6 +3,9 @@ from conditions import Condition, ConditionException, CustomConditions
 from logger import logger
 from typing import List, Callable, Any
 from enum import Enum
+from multiprocessing import Value, Lock
+import logging
+from os.path import join as path_join
 
 
 class SystemTransitionType(Enum):
@@ -14,7 +17,23 @@ class SystemTransitionType(Enum):
     LAST = 1
 
 
+class Counter(object):
+    def __init__(self, initval=0):
+        self.val = Value('i', initval)
+        self.lock = Lock()
+
+    def increment(self):
+        with self.lock:
+            self.val.value += 1
+
+    def value(self):
+        with self.lock:
+            return self.val.value
+
+
 class SystemTransition(object):
+    __id = Counter()
+    __base_log_path = "/home/oleg/Projects/differential-analysis-MISTY-ciphers/logs/run_logs"
 
     def __init__(self, transitions: List[Transition]) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
@@ -31,6 +50,11 @@ class SystemTransition(object):
         """
         self._parent = None  # type: SystemTransition
         self._type = None  # type: SystemTransitionType
+        self._logger = logging.getLogger("system_transition.new_object")
+        fh = logging.FileHandler(path_join(SystemTransition.__base_log_path, str(SystemTransition.__id.value())))
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname) obj s: %(message)s'))
+        self._logger.addHandler(fh)
 
     def __str__(self) -> str:
         system = ""  # type: str
