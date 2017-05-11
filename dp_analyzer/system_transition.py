@@ -6,6 +6,7 @@ from enum import Enum
 from multiprocessing import Value, Lock
 import logging
 from os.path import join as path_join
+import sys
 
 
 class SystemTransitionType(Enum):
@@ -25,6 +26,7 @@ class Counter(object):
     def increment(self):
         with self.lock:
             self.val.value += 1
+            return self.val.value
 
     def value(self):
         with self.lock:
@@ -50,17 +52,38 @@ class SystemTransition(object):
         """
         self._parent = None  # type: SystemTransition
         self._type = None  # type: SystemTransitionType
-        self._logger = logging.getLogger("system_transition.new_object")
-        fh = logging.FileHandler(path_join(SystemTransition.__base_log_path, str(SystemTransition.__id.value())))
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname) obj s: %(message)s'))
-        self._logger.addHandler(fh)
+        self._id = SystemTransition.__id.increment()  # type: int
+        self._logger = None  # type: logging.Logger
+        self._file_handler = []  # type: List
 
     def __str__(self) -> str:
         system = ""  # type: str
         for ind in range(len(self.__transitions)):
             system += "%d) %s\n" % (ind + 1, str(self.__transitions[ind]))
         return system
+
+    def open_log_file(self):
+        self._logger = logging.getLogger("system_transition.new_object")
+        cs = logging.StreamHandler(sys.stdout)
+        cs.setLevel(logging.DEBUG)
+        cs.setFormatter(logging.Formatter('{} %(asctime)s: %(levelname)s: %(message)s'.format(self._id)))
+        self._logger.addHandler(cs)
+        self._file_handler.append(cs)
+        fh = logging.FileHandler(path_join(SystemTransition.__base_log_path, str(self._id)))
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(message)s'))
+        self._logger.addHandler(fh)
+        self._file_handler.append(fh)
+
+    def close_log_file(self):
+        assert len(self._file_handler) > 0
+        for handler in self._file_handler:
+            self._logger.removeHandler(handler)
+            handler.flush()
+            handler.close()
+
+        self._file_handler.clear()
+        self._logger = None
 
     def get_amount_rounds(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
@@ -88,6 +111,7 @@ class SystemTransition(object):
         self._common_non_zero_conds.extend(out_non_zero_cond)
 
     def dump_system(self, log_fn: Callable[[str], None], msg: str='') -> None:
+        log_fn = self._logger.info
         log_fn('{0} System dump start {0}'.format('-'*20))
         if msg:
             log_fn(msg)
