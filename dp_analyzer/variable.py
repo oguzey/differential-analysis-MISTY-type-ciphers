@@ -8,7 +8,9 @@ class TypeVariable(Enum):
     UNKNOWN = 2
 
     def __str__(self):
-        return self._name_.capitalize()
+        return {TypeVariable.INPUT: 'a',
+                TypeVariable.OUTPUT: 'c',
+                TypeVariable.UNKNOWN: 'b'}.get(self, None)
 
 
 class Variable(object):
@@ -45,7 +47,7 @@ class Variable(object):
         return self.__id > other.__id
 
     def __str__(self) -> str:
-        return "[{} : {}]".format(str(self.__type), self.__id)
+        return "{}{}".format(str(self.__type), self.__id)
 
     def __repr__(self) -> str:
         return self.__str__()

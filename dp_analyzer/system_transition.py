@@ -6,7 +6,7 @@ from enum import Enum
 from multiprocessing import Value, Lock
 import logging
 from os.path import join as path_join
-from os import rename
+from os import rename, getcwd
 import sys
 
 
@@ -36,7 +36,7 @@ class Counter(object):
 
 class SystemTransition(object):
     __id = Counter()
-    __base_log_path = "/home/oleg/Projects/differential-analysis-MISTY-ciphers/logs/run_logs"
+    base_log_path = path_join(getcwd(), "../logs/run_logs")
 
     def __init__(self, transitions: List[Transition]) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
@@ -70,7 +70,7 @@ class SystemTransition(object):
         cs.setFormatter(logging.Formatter('{} %(asctime)s: %(levelname)s: %(message)s'.format(self._id)))
         self._logger.addHandler(cs)
         self._file_handler.append(cs)
-        fh = logging.FileHandler(path_join(SystemTransition.__base_log_path, str(self._id)))
+        fh = logging.FileHandler(path_join(SystemTransition.base_log_path, str(self._id)))
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(message)s'))
         self._logger.addHandler(fh)
@@ -84,7 +84,7 @@ class SystemTransition(object):
             handler.close()
 
         # rename file with results
-        new_name = path_join(SystemTransition.__base_log_path, 'case-{}; mark: {}'.format(self._id, self._mark))
+        new_name = path_join(SystemTransition.base_log_path, 'case-{}; mark: {}'.format(self._id, self._mark))
         rename(self._file_handler[1].baseFilename, new_name)
         self._file_handler.clear()
         self._logger = None
