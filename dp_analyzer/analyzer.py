@@ -26,6 +26,7 @@ def worker(system, input_tasks, done_tasks):
         logger.info("AAAAPPPPPPPPPPPPPPPPEND")
     logger.info('[{}.{}] got system \n{}'.format(mp.current_process().name, mp.current_process().pid, system))
     system.open_log_file()
+    system.dump_system('Start analyze')
     if system.verify():
         try:
             system.new_estimate(append_to_input)

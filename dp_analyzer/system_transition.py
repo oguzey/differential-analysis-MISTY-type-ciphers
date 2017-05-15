@@ -6,6 +6,7 @@ from enum import Enum
 from multiprocessing import Value, Lock
 import logging
 from os.path import join as path_join
+from os import rename
 import sys
 
 
@@ -82,6 +83,9 @@ class SystemTransition(object):
             handler.flush()
             handler.close()
 
+        # rename file with results
+        new_name = path_join(SystemTransition.__base_log_path, 'case-{}; mark: {}'.format(self._id, self._mark))
+        rename(self._file_handler[1].baseFilename, new_name)
         self._file_handler.clear()
         self._logger = None
 
@@ -110,16 +114,14 @@ class SystemTransition(object):
         self._common_non_zero_conds = in_non_zero_cond
         self._common_non_zero_conds.extend(out_non_zero_cond)
 
-    def dump_system(self, log_fn: Callable[[str], None], msg: str='') -> None:
+    def dump_system(self, msg: str='') -> None:
         log_fn = self._logger.info
-        log_fn('{0} System dump start {0}'.format('-'*20))
-        if msg:
-            log_fn(msg)
+        log_fn('{0} {1} {0}'.format('-'*20, msg))
         log_fn('Transitions: \n{}'.format(self))
         log_fn('Custom conditions: {}'.format(self._custom_conds))
         log_fn('Zero common cond: {}'.format("; ".join(map(str, self._common_zero_conds))))
         log_fn('Non zero common cond: {}'.format("; ".join(map(str, self._common_non_zero_conds))))
-        log_fn('{0} System dump end {0}'.format('-' * 20))
+        log_fn('{0}{0}'.format('-' * 25))
 
     def __clone(self, set_parent: bool=False) -> 'SystemTransition':
         new_system = SystemTransition([tr.copy() for tr in self.__transitions])
@@ -228,12 +230,12 @@ class SystemTransition(object):
         for x in self._common_zero_conds:
             self.__apply_condition(x)
 
-        self.dump_system(logger.debug, 'System after apply all zero conditions')
+        self.dump_system('System after apply all zero conditions')
 
         self._custom_conds = CustomConditions()
         self.__simplify_with_custom_conditions(self._custom_conds)
 
-        self.dump_system(logger.debug, 'System after apply first custom conditions')
+        self.dump_system('System after apply first custom conditions')
 
         if self._custom_conds.exist_contradiction(self._common_non_zero_conds):
             logger.info("System has contradiction conditions.")
@@ -241,14 +243,14 @@ class SystemTransition(object):
             return False
         elif self.__do_fast_estimation(self._custom_conds, self._common_non_zero_conds):
             logger.info("System was estimated. All transitions are primitive.")
-            self.dump_system(logger.debug, 'System was estimated after fast estimation')
+            self.dump_system('System was estimated after fast estimation')
             self._type = SystemTransitionType.LAST
             self._is_estimated = True
             # TODO: add correct mark
             self._mark = ("p^%d" % self.get_amount_rounds(), pow(0.5, self.get_amount_rounds()))
             return True
         else:
-            self.dump_system(logger.debug, 'System after applying conditions')
+            self.dump_system('System after applying conditions')
             return True
 
     def new_estimate(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
@@ -256,13 +258,13 @@ class SystemTransition(object):
         count_with_unknowns = 0
         # little optimization for check contradiction
         created_new_conditions = True  # type: bool
-        self.dump_system(logger.debug, 'start estimation')
+        self.dump_system('start estimation')
         # logger.debug("This call of function is %s FORK" % ("" if call_as_fork else "NOT"))
 
         for x in range(len(self.__transitions) - 1, -1, -1):
             if created_new_conditions and self._custom_conds.exist_contradiction(self._common_non_zero_conds):
                 logger.info("System has contradiction conditions")
-                self.dump_system(logger.debug, 'System has contradiction conditions')
+                self.dump_system('System has contradiction conditions')
                 self.__set_fail_state()
                 return
 
@@ -298,7 +300,7 @@ class SystemTransition(object):
                 try:
                     self._custom_conds.append_condition(nz)
                 except ConditionException:
-                    self.dump_system(logger.info, "Catch condition exception")
+                    self.dump_system("Catch condition exception")
                     self.__set_fail_state()
                     return
                 logger.debug("Updated custom condition: " + str(self._custom_conds))
@@ -313,7 +315,7 @@ class SystemTransition(object):
                 try:
                     self._custom_conds.append_condition(nz)
                 except ConditionException:
-                    self.dump_system(logger.info, "Catch condition exception")
+                    self.dump_system("Catch condition exception")
                     self.__set_fail_state()
                     return
                 logger.debug("Updated custom condition is " + str(self._custom_conds))
@@ -338,19 +340,19 @@ class SystemTransition(object):
                 right_zc = Condition.create_zero_condition(right.copy())
                 logger.debug("New zero conditions %s and %s" % (str(left_zc), str(right_zc)))
                 new_system = self.__clone(set_parent=fork)
-                new_system.dump_system(logger.debug, "New system")
+                new_system.dump_system("New system")
                 try:
                     new_system._custom_conds.append_condition(left_zc)
                     new_system._custom_conds.append_condition(right_zc)
                     new_system.__simplify_with_custom_conditions(new_system._custom_conds)
-                    new_system.dump_system(logger.debug, "New system after simplify")
+                    new_system.dump_system("New system after simplify")
                     if new_system._custom_conds.exist_contradiction(new_system._common_non_zero_conds):
                         logger.info("System has contradiction conditions")
-                        self.dump_system(logger.debug, 'System has contradiction conditions')
+                        self.dump_system('System has contradiction conditions')
                         self.__set_fail_state()
                         return
                 except ConditionException:
-                    self.dump_system(logger.info, "Catch condition exception2")
+                    self.dump_system("Catch condition exception2")
                     self.__set_fail_state()
                     # Have one more case, do not return from function
                 else:
@@ -369,7 +371,7 @@ class SystemTransition(object):
                     logger.debug("Updated custom conditions " + str(self._custom_conds))
                     count_with_unknowns += 1
                 except ConditionException:
-                    self.dump_system(logger.info, "Catch condition exception3")
+                    self.dump_system("Catch condition exception3")
                     self.__set_fail_state()
                     return
 
