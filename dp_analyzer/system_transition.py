@@ -89,6 +89,9 @@ class SystemTransition(object):
         self._file_handler.clear()
         self._logger = None
 
+    def get_parent(self):
+        return self._parent
+
     def get_amount_rounds(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
         return len(self.__transitions)
@@ -116,8 +119,9 @@ class SystemTransition(object):
         self._common_non_zero_conds.extend(in_non_zero_cond)
         self._common_non_zero_conds.extend(out_non_zero_cond)
 
-    def dump_system(self, msg: str='') -> None:
-        log_fn = self._logger.info
+    def dump_system(self, msg: str='', log_fn=None) -> None:
+        if log_fn is None:
+            log_fn = self._logger.info
         log_fn('{0} {1} {0}'.format('-'*20, msg))
         log_fn('Transitions: \n{}'.format(self))
         log_fn('Custom conditions: {}'.format(self._custom_conds))
@@ -228,6 +232,23 @@ class SystemTransition(object):
         self._mark = None
 
     def verify(self) -> bool:
+        if self._custom_conds is not None:
+            self.dump_system('Start analyze cloned system')
+            #  System was cloned from other system
+            if self._parent is not None:
+                self._parent.dump_system('Parent was', self._logger.info)
+            #  Just check contradiction
+            self.__simplify_with_custom_conditions(self._custom_conds)
+            self.dump_system("System after simplifying")
+            if self._custom_conds.exist_contradiction(self._common_non_zero_conds):
+                logger.info("System has contradiction conditions")
+                self.dump_system('System has contradiction conditions')
+                self.__set_fail_state()
+                return False
+            else:
+                return True
+
+        self.dump_system('Start analyze new system')
         # Apply all zero conditions and drop them as variables became zero
         for x in self._common_zero_conds:
             self.__apply_condition(x)
@@ -342,20 +363,14 @@ class SystemTransition(object):
                 right_zc = Condition.create_zero_condition(right.copy())
                 logger.debug("New zero conditions %s and %s" % (str(left_zc), str(right_zc)))
                 new_system = self.__clone(set_parent=fork)
-                new_system.dump_system("New system")
                 try:
                     new_system._custom_conds.append_condition(left_zc)
                     new_system._custom_conds.append_condition(right_zc)
-                    new_system.__simplify_with_custom_conditions(new_system._custom_conds)
-                    new_system.dump_system("New system after simplify")
-                    if new_system._custom_conds.exist_contradiction(new_system._common_non_zero_conds):
-                        logger.info("System has contradiction conditions")
-                        self.dump_system('System has contradiction conditions')
-                        self.__set_fail_state()
-                        return
                 except ConditionException:
-                    self.dump_system("Catch condition exception2")
-                    self.__set_fail_state()
+                    # XXX: Cannot dump new system to file. File does not exist.
+                    # new_system.dump_system("Catch condition exception2")
+                    logger.info("Catch condition exception2")
+                    new_system.__set_fail_state()
                     # Have one more case, do not return from function
                 else:
                     # TODO: regarding to var 'fork' change mark for new_system
