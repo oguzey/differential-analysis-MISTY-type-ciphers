@@ -107,11 +107,13 @@ class SystemTransition(object):
     def set_common_conditions(self, in_zero_cond: List[Condition], in_non_zero_cond: List[Condition],
                               out_zero_cond: List[Condition], out_non_zero_cond: List[Condition]) -> None:
         # Set zero conditions
-        self._common_zero_conds = in_zero_cond
+        self._common_zero_conds = []
+        self._common_zero_conds.extend(in_zero_cond)
         self._common_zero_conds.extend(out_zero_cond)
 
         # Set non zero conditions
-        self._common_non_zero_conds = in_non_zero_cond
+        self._common_non_zero_conds = []
+        self._common_non_zero_conds.extend(in_non_zero_cond)
         self._common_non_zero_conds.extend(out_non_zero_cond)
 
     def dump_system(self, msg: str='') -> None:

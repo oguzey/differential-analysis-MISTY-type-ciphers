@@ -48,8 +48,7 @@ class CommonConditionGenerator(object):
         assert all([isinstance(x, Variable) and not x.is_unknown() for x in variables])
         cconditions = []  # type: List[Tuple[List[Condition], List[Condition]]]
 
-        if len(variables) == 0:
-            return cconditions
+        assert len(variables) > 0
 
         for zero_pos in self.__generate_zero_positions(variables):
             zero_conds = []  # type: List[Condition]

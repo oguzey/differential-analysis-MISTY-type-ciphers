@@ -6,6 +6,7 @@ from conditions import CustomConditions, Condition
 from common_condition_generator import CommonConditionGenerator
 from variable import Variable, TypeVariable
 from transition import Transition, BlockFunction
+from linear_operator import ExtenderLinearOperator, ConstrictorLinearOperator
 from side import Side
 from typing import List
 import multiprocessing as mp
@@ -33,6 +34,7 @@ def worker(system, input_tasks, done_tasks):
         except Exception as ex:
             logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(type(ex)))
             logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(ex))
+            raise ex
     # after get_estimate we should get estimate so we can add the system to done_tasks
     system.close_log_file()
     done_tasks.put(system)
@@ -97,6 +99,12 @@ def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
     # logger.info("Total estimated is %d" % estimated)
 
 
+def clone_with_use_oper(var, op):
+    tmp = var.clone()
+    tmp.apply_lin_oper(op)
+    return tmp
+
+
 if __name__ == "__main__":
 
     a1 = Variable(TypeVariable.INPUT)
@@ -107,8 +115,11 @@ if __name__ == "__main__":
     c1 = Variable(TypeVariable.OUTPUT)
     c2 = Variable(TypeVariable.OUTPUT)
 
-    trans = [Transition(Side(a1), Side(b1, a2), BlockFunction('F', 'p')),
-             Transition(Side(a2), Side(c2, b1), BlockFunction('G', 'q')),
-             Transition(Side(b1), Side(c1, c2), BlockFunction('F', 'p'))]
+    ext_lin_oper = ExtenderLinearOperator("μ")
+    con_lin_oper = ConstrictorLinearOperator("λ")
+
+    trans = [Transition(Side(a1), Side(b1, clone_with_use_oper(a2, ext_lin_oper)), BlockFunction('F', 'p')),
+             Transition(Side(a2), Side(c2, clone_with_use_oper(b1, con_lin_oper)), BlockFunction('G', 'q')),
+             Transition(Side(b1), Side(c1, clone_with_use_oper(c2, ext_lin_oper)), BlockFunction('F', 'p'))]
 
     main(trans, [a1, a2], [c1, c2], amount_workers=1)

@@ -26,7 +26,7 @@ class Side(object):
         return len(self.__vars)
 
     def copy(self) -> 'Side':
-        return Side(*self.__vars)
+        return Side(*[x.clone() for x in self.__vars])
 
     def equals(self, other: 'Side') -> bool:
         return self.__eq__(other)

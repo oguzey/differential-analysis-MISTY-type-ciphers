@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Dict, List
-
+from typing import Dict, List, Union
+from linear_operator import LinearOperator, ConstrictorLinearOperator, ExtenderLinearOperator
 
 class TypeVariable(Enum):
     INPUT = 0
@@ -15,7 +15,7 @@ class TypeVariable(Enum):
 
 class Variable(object):
     # __k__ - coefficient for calculation hash of Variable
-    __k__ = 1000000  # type: int
+    __k__ = 1000000000  # type: int
     __id__ = {
         TypeVariable.INPUT: 1,
         TypeVariable.OUTPUT: 1,
@@ -27,13 +27,17 @@ class Variable(object):
         TypeVariable.UNKNOWN: []
     }  # type: Dict[Enum, List[Variable]]
 
-    def __init__(self, type_var: TypeVariable) -> None:
+    def __init__(self, type_var: TypeVariable, id: int=None) -> None:
         super(Variable, self).__init__()
         Variable.instances[type_var].append(self)
-        self.__id = Variable.__id__[type_var]  # type: int
+        if id is not None:
+            self.__id = id
+        else:
+            self.__id = Variable.__id__[type_var]  # type: int
         Variable.__id__[type_var] += 1
         self.__type = type_var  # type: TypeVariable
         self.__hash = Variable.__k__ * int(self.__type.value) + self.__id  # type: int
+        self.__loperators = []  # type: List[Union[ConstrictorLinearOperator, ExtenderLinearOperator]]
 
     def __eq__(self, other: 'Variable') -> bool:
         return self.__type == other.__type and self.__id == other.__id
@@ -47,7 +51,10 @@ class Variable(object):
         return self.__id > other.__id
 
     def __str__(self) -> str:
-        return "{}{}".format(str(self.__type), self.__id)
+        res = "{}{}".format(str(self.__type), self.__id)
+        for lop in self.__loperators:
+            res = "{}({})".format(lop.get_name(), res)
+        return res
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -69,3 +76,14 @@ class Variable(object):
 
     def get_id(self) -> int:
         return self.__id
+
+    def clone(self) -> 'Variable':
+        #  XXX: Variable.__id will be increasing
+        x = Variable(self.__type, self.__id)
+        for lop in self.__loperators:
+            x.apply_lin_oper(lop)
+        return x
+
+    def apply_lin_oper(self, lin_op: Union[ConstrictorLinearOperator, ExtenderLinearOperator]):
+        assert lin_op is not None
+        self.__loperators.append(lin_op)
