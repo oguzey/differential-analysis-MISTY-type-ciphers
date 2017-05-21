@@ -8,6 +8,7 @@ import logging
 from os.path import join as path_join
 from os import rename, getcwd
 import sys
+from sympy import Symbol
 
 
 class SystemTransitionType(Enum):
@@ -72,7 +73,8 @@ class SystemTransition(object):
         self._file_handler.append(cs)
         fh = logging.FileHandler(path_join(SystemTransition.base_log_path, str(self._id)))
         fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(message)s'))
+        #fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(message)s'))
+        fh.setFormatter(logging.Formatter('%(message)s'))
         self._logger.addHandler(fh)
         self._file_handler.append(fh)
 
@@ -84,10 +86,13 @@ class SystemTransition(object):
             handler.close()
 
         # rename file with results
-        new_name = path_join(SystemTransition.base_log_path, 'case-{}; mark: {}'.format(self._id, self._mark))
+        new_name = path_join(SystemTransition.base_log_path, 'case_{}__mark_is_{}'.format(self._id, self._mark))
         rename(self._file_handler[1].baseFilename, new_name)
         self._file_handler.clear()
         self._logger = None
+
+    def get_system_id(self):
+        return self._id
 
     def get_parent(self):
         return self._parent
@@ -125,9 +130,9 @@ class SystemTransition(object):
         log_fn('{0} {1} {0}'.format('-'*20, msg))
         log_fn('Transitions: \n{}'.format(self))
         log_fn('Custom conditions: {}'.format(self._custom_conds))
-        log_fn('Zero common cond: {}'.format("; ".join(map(str, self._common_zero_conds))))
-        log_fn('Non zero common cond: {}'.format("; ".join(map(str, self._common_non_zero_conds))))
-        log_fn('{0}{0}'.format('-' * 25))
+        log_fn('Zero common conditions: {}'.format("; ".join(map(str, self._common_zero_conds))))
+        log_fn('Non zero common conditions: {}'.format("; ".join(map(str, self._common_non_zero_conds))))
+        log_fn('{0}{0}'.format('-' * 40))
 
     def __clone(self, set_parent: bool=False) -> 'SystemTransition':
         new_system = SystemTransition([tr.copy() for tr in self.__transitions])
@@ -195,17 +200,30 @@ class SystemTransition(object):
 
         return count_simple == len(self.__transitions)
 
-    def __analyse_and_set_custom_conditions(self, custom_conds: CustomConditions) -> int:
-        null_trans = []
+    def __remove_empty_transitions(self):
         rm = []
-        for transition in self.__transitions:
-            # TODO: refactor me.
-            if transition.has_both_empty_side():
-                rm.append(transition)
-            elif transition.has_empty_side():
-                null_trans.append(transition)
+        for index in range(len(self.__transitions)):
+            if self.__transitions[index].has_both_empty_side():
+                rm.append(index)
 
-        map(self.__transitions.remove, rm)
+        for index in rm:
+            self.__transitions.pop(index)
+
+    def __analyse_and_set_custom_conditions(self, custom_conds: CustomConditions) -> int:
+        self.__remove_empty_transitions()
+
+        null_trans = []
+
+        for transition in self.__transitions:
+            assert transition.has_both_empty_side() == False
+            if transition.has_empty_side():
+                null_trans.append(transition)
+                continue
+            # if custom_conds.is_side_non_zero(transition.get_left_side(), additional_conditions=self._common_non_zero_conds):
+            #     custom_conds.append_condition(Condition.create_non_zero_condition(transition.get_right_side()))
+            # elif custom_conds.is_side_non_zero(transition.get_right_side(), additional_conditions=self._common_non_zero_conds):
+            #     custom_conds.append_condition(Condition.create_non_zero_condition(transition.get_left_side()))
+
         for transition in null_trans:
             self.__transitions.remove(transition)
             custom_conds.append_condition(transition.make_zero_condition())
@@ -396,10 +414,18 @@ class SystemTransition(object):
 
         # TODO: Estimate system at the end function
         # TODO: add correct mark
-        expo = count_triviality + count_with_unknowns - self.__count_unknown_vars()
-        self._mark = ("p^%d" % expo, pow(0.5, expo))
+        self._mark = None
+        for tr in self.__transitions:
+            if self._mark is None:
+                self._mark = Symbol(tr.get_probability())
+            else:
+                self._mark *= Symbol(tr.get_probability())
+        # expo = count_triviality + count_with_unknowns - self.__count_unknown_vars()
+        # self._mark = ("p^%d" % expo, pow(0.5, expo))
         self._type = SystemTransitionType.LAST if self._type is None else self._type
         self._is_estimated = True
+
+        self.dump_system('Estimated with mark {}'.format(str(self._mark)))
         return
 
 

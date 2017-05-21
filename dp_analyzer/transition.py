@@ -32,6 +32,9 @@ class Transition(object):
     def __str__(self) -> str:
         return "{} --{}--> {}".format(str(self.__left), self._block_func, str(self.__right))
 
+    def get_probability(self) -> str:
+        return self._block_func.get_probability()
+
     def get_left_side(self) -> Side:
         return self.__left
 

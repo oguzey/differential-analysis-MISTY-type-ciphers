@@ -27,6 +27,8 @@ def worker(system, input_tasks, done_tasks):
         logger.info("AAAAPPPPPPPPPPPPPPPPEND")
     logger.info('[{}.{}] got system \n{}'.format(mp.current_process().name, mp.current_process().pid, system))
     system.open_log_file()
+    if system.get_system_id() == 5:
+        logger.info("start debuging")
     if system.verify():
         try:
             system.new_estimate(append_to_input)
@@ -57,6 +59,7 @@ def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
     logger.info("Created input_tasks = {}, done_tasks = {}".format(input_tasks, done_tasks))
     for in_zero_conds, in_non_zero_conds in input_conditions:
         for out_zero_conds, out_non_zero_conds in output_conditions:
+            logger.info('-' * 50)
             logger.info("Input condition: \n\t{}\n\t{}".format(zero_conds_to_str(in_zero_conds),
                                                                non_zero_conds_to_str(in_non_zero_conds)))
             logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),

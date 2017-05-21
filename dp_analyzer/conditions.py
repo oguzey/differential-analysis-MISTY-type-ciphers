@@ -2,7 +2,7 @@ from enum import Enum
 from variable import Variable
 from side import Side
 from logger import logger
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 from mypy_extensions import NoReturn
 
 
@@ -269,9 +269,16 @@ class CustomConditions(object):
 
         return new_cc
 
-    def is_side_non_zero(self, side: Side) -> bool:
+    def is_side_non_zero(self, side: Side, additional_conditions: Optional[List[Condition]]=None) -> bool:
         for condition in self.__conditions:
             if condition.get_state() == StateConditions.IS_NOT_ZERO and (
                     condition.get_left_side() == side):
+                return True
+        if additional_conditions is None:
+            return False
+
+        for condition in additional_conditions:
+            assert condition.get_state() == StateConditions.IS_NOT_ZERO
+            if condition.get_left_side() == side:
                 return True
         return False
