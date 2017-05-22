@@ -51,6 +51,11 @@ class Transition(object):
         return Transition(self.__left.copy(), self.__right.copy(), self._block_func)
 
     def apply_condition(self, condition: Condition) -> None:
+        """
+        Condition shoud be already formated !!!
+        :param condition:
+        :return:
+        """
         if condition.get_state() == StateConditions.IS_NOT_ZERO:
             logger.warn("Can not apply NOT_ZERO condition: {}".format(condition))
             return

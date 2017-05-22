@@ -29,7 +29,7 @@ def worker(system, input_tasks, done_tasks):
     system.open_log_file()
     if system.get_system_id() == 5:
         logger.info("start debuging")
-    if system.verify():
+    if system.simplify():
         try:
             system.new_estimate(append_to_input)
         except Exception as ex:
