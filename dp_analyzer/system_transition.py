@@ -210,7 +210,6 @@ class SystemTransition(object):
             for zcondition in new_zero_conds:
                 self._use_and_append_zero_cond(zcondition)
 
-
     def _remove_empty_transitions(self):
         rm = []
         for index in range(len(self.__transitions)):
@@ -266,7 +265,30 @@ class SystemTransition(object):
         self._is_estimated = False
         self._mark = None
 
-    def simplify(self) -> bool:
+    def estimate(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
+        logger.info("Start with system {}".format(self._id))
+
+        # For debugging
+        # if self._id == 5:
+        #     logger.info("start debuging")
+
+        try:
+            if self._simplify():
+                self._estimate_internal(append_system_fn)
+            else:
+                logger.info("System could not be simplified")
+                self.dump_system("System could not be simplified")
+                self.__set_fail_state()
+                return
+        except ConditionException as ce:
+            logger.info("System has contradiction conditions: {}".format(ce))
+            self.dump_system('System has contradiction conditions')
+            self.__set_fail_state()
+
+        finally:
+            logger.info("Done with system {}".format(self._id))
+
+    def _simplify(self) -> bool:
         if self._is_clone:
             self.dump_system('Simplifying cloned system')
             #  System was cloned from other system
@@ -275,13 +297,7 @@ class SystemTransition(object):
             #  Just check contradiction
             self._apply_equals_conditions()
             self.dump_system("Applied equals conditions")
-            if self._custom_conds.exist_contradiction(self._common_non_zero_conds):
-                logger.info("System has contradiction conditions")
-                self.dump_system('System has contradiction conditions')
-                self.__set_fail_state()
-                return False
-            else:
-                return True
+            return True
 
         self.dump_system('Simplifying new system')
         # Apply all zero conditions and drop them as variables became zero
@@ -293,11 +309,7 @@ class SystemTransition(object):
         self._apply_equals_conditions()
         self.dump_system('After applied equals conditions')
 
-        if self._custom_conds.exist_contradiction(self._common_non_zero_conds):
-            logger.info("System has contradiction conditions.")
-            self.__set_fail_state()
-            return False
-        elif self.__do_fast_estimation(self._custom_conds, self._common_non_zero_conds):
+        if self.__do_fast_estimation(self._custom_conds, self._common_non_zero_conds):
             logger.info("System was estimated. All transitions are primitive.")
             self.dump_system('System was estimated after fast estimation')
             self._type = SystemTransitionType.LAST
@@ -309,7 +321,7 @@ class SystemTransition(object):
             self.dump_system('System after applying conditions')
             return True
 
-    def new_estimate(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
+    def _estimate_internal(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
         count_triviality = 0
         count_with_unknowns = 0
         # little optimization for check contradiction

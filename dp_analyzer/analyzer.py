@@ -27,15 +27,12 @@ def worker(system, input_tasks, done_tasks):
         logger.info("AAAAPPPPPPPPPPPPPPPPEND")
     logger.info('[{}.{}] got system \n{}'.format(mp.current_process().name, mp.current_process().pid, system))
     system.open_log_file()
-    if system.get_system_id() == 5:
-        logger.info("start debuging")
-    if system.simplify():
-        try:
-            system.new_estimate(append_to_input)
-        except Exception as ex:
-            logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(type(ex)))
-            logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(ex))
-            raise ex
+    try:
+        system.estimate(append_to_input)
+    except Exception as ex:
+        logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(type(ex)))
+        logger.info("EEEEEXCCCCCCCCCCCCCCEEEEEEEEEEEEEPPPPPPPPPT {0}".format(ex))
+        raise ex
     # after get_estimate we should get estimate so we can add the system to done_tasks
     system.close_log_file()
     done_tasks.put(system)
