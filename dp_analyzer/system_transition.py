@@ -1,7 +1,8 @@
 from transition import Transition
 from conditions import Condition, ConditionException, StateConditions
+from side import Side
 from logger import logger
-from typing import List, Callable, Any, Set
+from typing import List, Callable, Set
 from enum import Enum
 from multiprocessing import Value, Lock
 import logging
@@ -247,13 +248,12 @@ class SystemTransition(object):
                 self.__apply_condition(condition)
             amount_new_conditions = self._analyse_and_generate_new_conditions()
 
-    #    for self_cond in self.__conditions:
-    # for c in common_conditions:
-    #                 if c.compare_conditions(self_cond) == CompareCondition.CONTRADICTION:
-    #                     logger.debug("Found contradictions %s and %s" % (str(c), str(self_cond)))
-    #                     return True
-    #         logger.debug("Contradiction not found with common_conditions")
-    #         return self.exist_contradiction_internal()
+    def _is_side_non_zero(self, side: Side) -> bool:
+        for nzcondition in self._conds_non_zero:
+            assert nzcondition.get_state() == StateConditions.IS_NOT_ZERO
+            if nzcondition.get_left_side() == side:
+                return True
+        return False
 
     def __set_fail_state(self) -> None:
         """
@@ -273,13 +273,13 @@ class SystemTransition(object):
         #     logger.info("start debuging")
 
         try:
-            if self._simplify():
-                self._estimate_internal(append_system_fn)
-            else:
-                logger.info("System could not be simplified")
-                self.dump_system("System could not be simplified")
-                self.__set_fail_state()
-                return
+            self._simplify()
+            self._estimate_internal(append_system_fn)
+
+                # logger.info("System could not be simplified")
+                # self.dump_system("System could not be simplified")
+                # self.__set_fail_state()
+                # return
         except ConditionException as ce:
             logger.info("System has contradiction conditions: {}".format(ce))
             self.dump_system('System has contradiction conditions')
@@ -288,7 +288,7 @@ class SystemTransition(object):
         finally:
             logger.info("Done with system {}".format(self._id))
 
-    def _simplify(self) -> bool:
+    def _simplify(self) -> None:
         if self._is_clone:
             self.dump_system('Simplifying cloned system')
             #  System was cloned from other system
@@ -297,7 +297,7 @@ class SystemTransition(object):
             #  Just check contradiction
             self._apply_equals_conditions()
             self.dump_system("Applied equals conditions")
-            return True
+            return
 
         self.dump_system('Simplifying new system')
         # Apply all zero conditions and drop them as variables became zero
@@ -308,18 +308,7 @@ class SystemTransition(object):
         self.dump_system('After applied zero conditions')
         self._apply_equals_conditions()
         self.dump_system('After applied equals conditions')
-
-        if self.__do_fast_estimation(self._custom_conds, self._common_non_zero_conds):
-            logger.info("System was estimated. All transitions are primitive.")
-            self.dump_system('System was estimated after fast estimation')
-            self._type = SystemTransitionType.LAST
-            self._is_estimated = True
-            # TODO: add correct mark
-            self._mark = ("p^%d" % self.get_amount_rounds(), pow(0.5, self.get_amount_rounds()))
-            return True
-        else:
-            self.dump_system('System after applying conditions')
-            return True
+        return
 
     def _estimate_internal(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
         count_triviality = 0
@@ -330,12 +319,6 @@ class SystemTransition(object):
         # logger.debug("This call of function is %s FORK" % ("" if call_as_fork else "NOT"))
 
         for x in range(len(self.__transitions) - 1, -1, -1):
-            if created_new_conditions and self._custom_conds.exist_contradiction(self._common_non_zero_conds):
-                logger.info("System has contradiction conditions")
-                self.dump_system('System has contradiction conditions')
-                self.__set_fail_state()
-                return
-
             created_new_conditions = False
 
             transition = self.__transitions[x]
@@ -343,50 +326,38 @@ class SystemTransition(object):
             left = transition.get_left_side()
             right = transition.get_right_side()
             # TODO: DO NOT INCLUDE ESTIMATION FOR THAT TRANSITION
-            # assert len(left) > 0 and len(right) > 0
+            assert len(left) > 0 and len(right) > 0
 
             # 2 sides does not have unknowns
             if not left.contains_unknown() and not right.contains_unknown():
                 count_triviality += 1
-                logger.debug("Transition is triviality")
+                logger.debug("Transition {} is triviality".format(transition))
                 continue
 
-            is_left_non_zero = self._custom_conds.is_side_non_zero(left)
-            is_right_non_zero = self._custom_conds.is_side_non_zero(right)
+            is_left_non_zero = self._is_side_non_zero(left)
+            is_right_non_zero = self._is_side_non_zero(right)
 
             if is_left_non_zero and is_right_non_zero:
-                logger.debug("Both sides of transition are NOT ZERO")
+                logger.debug("Both sides '{}' and '{}' are not zero".format(left, right))
                 # do nothing, just increase counter
                 count_with_unknowns += 1
                 continue
             elif is_left_non_zero and not is_right_non_zero:
-                logger.debug("Left side '%s' is NON ZERO. Rigth is undefined" % str(left))
+                logger.debug("Left side '{}' is NON ZERO. Rigth is undefined '{}'".format(left, right))
                 # fixed left side - not fork
                 created_new_conditions = True
                 nz = Condition.create_non_zero_condition(right.copy())
-                logger.debug("Create non zero condition " + str(nz))
-                try:
-                    self._custom_conds.append_condition(nz)
-                except ConditionException:
-                    self.dump_system("Catch condition exception")
-                    self.__set_fail_state()
-                    return
-                logger.debug("Updated custom condition: " + str(self._custom_conds))
+                logger.debug("Create non zero condition '{}'".format(nz))
+                self._conds_non_zero.append(nz)
                 count_with_unknowns += 1
                 continue
             elif not is_left_non_zero and is_right_non_zero:
-                logger.debug("Right side '%s' is NON ZERO. Left undefined" % str(right))
+                logger.debug("Right side '{}' is NON ZERO. Left is undefined '{}'".format(right, left))
                 # fixed right side - not fork
                 created_new_conditions = True
                 nz = Condition.create_non_zero_condition(left.copy())
-                logger.debug("Create non zero condition: " + str(nz))
-                try:
-                    self._custom_conds.append_condition(nz)
-                except ConditionException:
-                    self.dump_system("Catch condition exception")
-                    self.__set_fail_state()
-                    return
-                logger.debug("Updated custom condition is " + str(self._custom_conds))
+                logger.debug("Create non zero condition: '{}'".format(nz))
+                self._conds_non_zero.append(nz)
                 count_with_unknowns += 1
                 continue
             else:
@@ -403,40 +374,24 @@ class SystemTransition(object):
                     fork = True
 
                 created_new_conditions = True
-                logger.debug("Creating new components for zero case")
-                left_zc = Condition.create_zero_condition(left.copy())
-                right_zc = Condition.create_zero_condition(right.copy())
-                logger.debug("New zero conditions %s and %s" % (str(left_zc), str(right_zc)))
-                new_system = self.__clone(set_parent=fork)
-                try:
-                    new_system._custom_conds.append_condition(left_zc)
-                    new_system._custom_conds.append_condition(right_zc)
-                except ConditionException:
-                    # XXX: Cannot dump new system to file. File does not exist.
-                    # new_system.dump_system("Catch condition exception2")
-                    logger.info("Catch condition exception2")
-                    new_system.__set_fail_state()
-                    # Have one more case, do not return from function
-                else:
-                    # TODO: regarding to var 'fork' change mark for new_system
-                    append_system_fn(new_system)
-                    logger.debug("New system added to queue")
 
-                created_new_conditions = True
-                # none zero case
+                new_system = self.__clone(set_parent=fork)
+                # create non zero condition and add them to new system
+                #logger.debug("Creating new conditions for non zero case")
                 left_nzc = Condition.create_non_zero_condition(left.copy())
                 right_nzc = Condition.create_non_zero_condition(right.copy())
-                logger.debug("New non zero conditions %s and %s" % (str(left_nzc), str(right_nzc)))
-                try:
-                    self._custom_conds.append_condition(left_nzc)
-                    self._custom_conds.append_condition(right_nzc)
-                    logger.debug("Updated custom conditions " + str(self._custom_conds))
-                    count_with_unknowns += 1
-                except ConditionException:
-                    self.dump_system("Catch condition exception3")
-                    self.__set_fail_state()
-                    return
+                logger.debug("New non zero conditions '{}' and '{}'".format(left_nzc, right_nzc))
+                new_system._conds_non_zero.append(left_nzc)
+                new_system._conds_non_zero.append(right_nzc)
+                append_system_fn(new_system)
+                logger.debug("New system with id {} added to queue".format(new_system._id))
 
+                #logger.debug("Creating new conditions for zero case")
+                left_zc = Condition.create_zero_condition(left.copy())
+                right_zc = Condition.create_zero_condition(right.copy())
+                logger.debug("New zero conditions '{}' and '{}'".format(left_zc, right_zc))
+                self._use_and_append_zero_cond(left_zc)
+                self._use_and_append_zero_cond(right_zc)
                 continue
 
         # TODO: Estimate system at the end function
@@ -463,35 +418,35 @@ class SystemTransition(object):
         #         condition = custom_conditions.get_condition(index)
         #         self.__apply_condition(condition)
 
-    def __do_fast_estimation(self, custom_cond: CustomConditions, common_cond_nz: List[Condition]) -> bool:
-        nz_sides = [cond.get_left_side() for cond in common_cond_nz]
-
-        count_simple = 0
-        for trans in self.__transitions:
-            tr_left = trans.get_left_side()
-            tr_right = trans.get_right_side()
-
-            if tr_left in nz_sides and tr_right not in nz_sides:
-                custom_cond.append_condition(
-                    Condition.create_non_zero_condition(tr_right.copy()))
-                nz_sides.append(tr_right)
-                if tr_right.has_only_one_unknown():
-                    trans.make_simple()
-                    count_simple += 1
-            elif tr_left not in nz_sides and tr_right in nz_sides:
-                custom_cond.append_condition(
-                    Condition.create_non_zero_condition(tr_left.copy()))
-                nz_sides.append(tr_left)
-                if tr_left.has_only_one_unknown():
-                    trans.make_simple()
-                    count_simple += 1
-
-            if not tr_left.contains_unknown() and (
-                    not tr_right.contains_unknown()):
-                trans.make_simple()
-                count_simple += 1
-
-        return count_simple == len(self.__transitions)
+    # def __do_fast_estimation(self, custom_cond: CustomConditions, common_cond_nz: List[Condition]) -> bool:
+    #     nz_sides = [cond.get_left_side() for cond in common_cond_nz]
+    #
+    #     count_simple = 0
+    #     for trans in self.__transitions:
+    #         tr_left = trans.get_left_side()
+    #         tr_right = trans.get_right_side()
+    #
+    #         if tr_left in nz_sides and tr_right not in nz_sides:
+    #             custom_cond.append_condition(
+    #                 Condition.create_non_zero_condition(tr_right.copy()))
+    #             nz_sides.append(tr_right)
+    #             if tr_right.has_only_one_unknown():
+    #                 trans.make_simple()
+    #                 count_simple += 1
+    #         elif tr_left not in nz_sides and tr_right in nz_sides:
+    #             custom_cond.append_condition(
+    #                 Condition.create_non_zero_condition(tr_left.copy()))
+    #             nz_sides.append(tr_left)
+    #             if tr_left.has_only_one_unknown():
+    #                 trans.make_simple()
+    #                 count_simple += 1
+    #
+    #         if not tr_left.contains_unknown() and (
+    #                 not tr_right.contains_unknown()):
+    #             trans.make_simple()
+    #             count_simple += 1
+    #
+    #     return count_simple == len(self.__transitions)
 
     # def __count_unknown_vars(self) -> int:
     #     unknowns = []
