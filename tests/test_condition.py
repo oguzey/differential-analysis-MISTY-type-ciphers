@@ -5,7 +5,7 @@ import pytest
 from variable import Variable, TypeVariable
 from common_condition_generator import CommonConditionGenerator
 from analyzer import zero_conds_to_str, non_zero_conds_to_str
-from conditions import Condition, StateConditions
+from condition import Condition, ConditionState
 from side import Side
 from logger import logger
 
@@ -31,10 +31,10 @@ def test_generate_conditions():
 
 def test_to_srt():
     global a1, a2, a3
-    assert "{} = {}".format(a1, a2) == str(Condition(Side(a1), Side(a2), StateConditions.IS_EQUAL))
-    assert "{} != 0".format(a1) == str(Condition(Side(a1), Side(), StateConditions.IS_NOT_ZERO))
-    assert "{} != {}".format(a1, a2) == str(Condition(Side(a1), Side(a2), StateConditions.IS_NOT_ZERO))
-    assert "{} = 0".format(a1) == str(Condition(Side(a1), Side(), StateConditions.IS_ZERO))
+    assert "{} = {}".format(a1, a2) == str(Condition(Side(a1), Side(a2), ConditionState.IS_EQUAL))
+    assert "{} != 0".format(a1) == str(Condition(Side(a1), Side(), ConditionState.IS_NOT_ZERO))
+    assert "{} != {}".format(a1, a2) == str(Condition(Side(a1), Side(a2), ConditionState.IS_NOT_ZERO))
+    assert "{} = 0".format(a1) == str(Condition(Side(a1), Side(), ConditionState.IS_ZERO))
 
 if __name__ == "__main__":
     setup_module(None)

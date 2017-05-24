@@ -1,5 +1,5 @@
 from transition import Transition
-from conditions import Condition, ConditionException, StateConditions
+from condition import Condition, ConditionException, ConditionState
 from side import Side
 from logger import logger
 from typing import List, Callable, Set
@@ -127,31 +127,29 @@ class SystemTransition(object):
         self._common_zero_conds = []
         self._common_zero_conds.extend(in_zero_cond)
         self._common_zero_conds.extend(out_zero_cond)
-
         # NOTE: set self._conds_zero in function simplify
-        self._common_zero_conds = set(self._common_zero_conds)
 
         # Set non zero conditions
         self._common_non_zero_conds = []
         self._common_non_zero_conds.extend(in_non_zero_cond)
         self._common_non_zero_conds.extend(out_non_zero_cond)
-
-        self._conds_non_zero = self._common_non_zero_conds
-        self._common_non_zero_conds = set(self._common_non_zero_conds)
+        self._conds_non_zero = self._common_non_zero_conds[:]
 
     @staticmethod
     def _conds_to_str(conditions: List[Condition]) -> str:
-        return "{\n\t{}\n}".format("\n\t".join(map(str, conditions)))
+        return "{{\n\t{}\n}}".format("\n\t".join(map(str, conditions)))
 
-    def dump_system(self, msg: str='', log_fn=None, print_common_conds=False) -> None:
+    def dump_system(self, msg: str='', log_fn=None, with_trans=True, with_main_conds=True, with_common_conds=False) -> None:
         if log_fn is None:
             log_fn = self._logger.info
         log_fn('{0} {1} {0}'.format('-'*20, msg))
-        log_fn('Transitions: \n{}'.format(self))
-        log_fn('Zero conds: {}'.format(self._conds_to_str(self._conds_zero)))
-        log_fn('Non zero conds: {}'.format(self._conds_to_str(self._conds_non_zero)))
-        log_fn('Equals conds: {}'.format(self._conds_to_str(self._conds_equals)))
-        if print_common_conds:
+        if with_trans:
+            log_fn('Transitions: \n{}'.format(self))
+        if with_main_conds:
+            log_fn('Zero conds: {}'.format(self._conds_to_str(self._conds_zero)))
+            log_fn('Non zero conds: {}'.format(self._conds_to_str(self._conds_non_zero)))
+            log_fn('Equals conds: {}'.format(self._conds_to_str(self._conds_equals)))
+        if with_common_conds:
             log_fn('Common zero conditions: {}'.format("; ".join(map(str, self._common_zero_conds))))
             log_fn('Common non zero conditions: {}'.format("; ".join(map(str, self._common_non_zero_conds))))
         log_fn('{0}{0}'.format('-' * 40))
@@ -178,36 +176,45 @@ class SystemTransition(object):
             transition.apply_condition(condition)
 
     def _use_and_append_zero_cond(self, condition: Condition) -> None:
+        condition.normalise()
         self.__apply_condition(condition)
+        self.dump_system("System after apply condition {}".format(condition), with_main_conds=False)
         for nzcondition in self._conds_non_zero:
-            nzcondition.update_with(condition)
+            if nzcondition.update_with(condition):
+                self.dump_system("Conditions after apply condition {}".format(condition), with_trans=False)
             if not nzcondition.is_correct():
                 raise ConditionException("Contradiction detected '{}'".format(nzcondition))
 
         new_zero_conds = []
         useless_econds = []
         for econdition in self._conds_equals:
-            econdition.update_with(condition)
+            if econdition.update_with(condition):
+                self.dump_system("Conditions after apply condition {}".format(condition), with_trans=False)
             if not econdition.is_correct():
                 raise ConditionException("Contradiction detected '{}'".format(econdition))
-            if econdition.get_state() == StateConditions.IS_ZERO:
+            if econdition.get_state() == ConditionState.IS_ZERO:
                 #  condition was converted
                 new_zero_conds.append(econdition)
             if econdition.is_useless():
                 useless_econds.append(econdition)
-        self._conds_zero.append(condition)
 
+        if condition.get_state() == ConditionState.IS_EQUAL:
+            self._conds_equals.append(condition)
+        else:
+            self._conds_zero.append(condition)
+        self.dump_system("Added condition {}".format(condition), with_trans=False)
         #  remove useless condition
-        for ucondition in useless_econds:
-            self._conds_equals.remove(ucondition)
-            logger.info("_use_and_append_zero_cond: remove useless condition from _conds_equals '{}'".format(ucondition))
-
+        if len(useless_econds):
+            for ucondition in useless_econds:
+                self._conds_equals.remove(ucondition)
+                logger.info("_use_and_append_zero_cond: remove useless condition from _conds_equals '{}'".format(ucondition))
+            self.dump_system("Clear _conds_equals", with_trans=False)
         # remove and apply new zero conditions
         if len(new_zero_conds) > 0:
             for zcondition in new_zero_conds:
                 self._conds_equals.remove(zcondition)
                 logger.info("_use_and_append_zero_cond: remove new zero condition from _conds_equals '{}'".format(zcondition))
-
+            self.dump_system("Clear _conds_equals 2", with_trans=False)
             for zcondition in new_zero_conds:
                 self._use_and_append_zero_cond(zcondition)
 
@@ -250,7 +257,7 @@ class SystemTransition(object):
 
     def _is_side_non_zero(self, side: Side) -> bool:
         for nzcondition in self._conds_non_zero:
-            assert nzcondition.get_state() == StateConditions.IS_NOT_ZERO
+            assert nzcondition.get_state() == ConditionState.IS_NOT_ZERO
             if nzcondition.get_left_side() == side:
                 return True
         return False
@@ -299,7 +306,7 @@ class SystemTransition(object):
             self.dump_system("Applied equals conditions")
             return
 
-        self.dump_system('Simplifying new system')
+        self.dump_system('Simplifying new system', with_common_conds=True)
         # Apply all zero conditions and drop them as variables became zero
 
         for condition in self._common_zero_conds:

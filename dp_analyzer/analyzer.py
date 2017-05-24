@@ -2,7 +2,7 @@
 
 from logger import logger
 from system_transition import SystemTransition
-from conditions import Condition
+from condition import Condition
 from common_condition_generator import CommonConditionGenerator
 from variable import Variable, TypeVariable
 from transition import Transition, BlockFunction

@@ -1,10 +1,10 @@
-from conditions import Condition
+from condition import Condition
 from side import Side
-from conditions import StateConditions
+from condition import ConditionState
 from variable import Variable
 from variable import TypeVariable
-from conditions import CustomConditions
-from conditions import CompareCondition
+from condition import CustomConditions
+from condition import CompareCondition
 
 a = Variable(TypeVariable.INPUT)
 a2 = Variable(TypeVariable.INPUT)
@@ -24,101 +24,101 @@ g3 = Variable(TypeVariable.OUTPUT)
 # assert test.is_contradiction(test2)
 
 """ test of useless """
-test = Condition(Side(), Side(), StateConditions.IS_ZERO)
+test = Condition(Side(), Side(), ConditionState.IS_ZERO)
 assert test.is_useless()
 
-test = Condition(Side(a, g3), Side(g3, a), StateConditions.IS_EQUAL)
+test = Condition(Side(a, g3), Side(g3, a), ConditionState.IS_EQUAL)
 assert test.is_useless()
 
-test = Condition(Side(a, g3), Side(a, g3), StateConditions.IS_EQUAL)
+test = Condition(Side(a, g3), Side(a, g3), ConditionState.IS_EQUAL)
 assert test.is_useless()
 
-test = Condition(Side(a, g3), Side(), StateConditions.IS_ZERO)
+test = Condition(Side(a, g3), Side(), ConditionState.IS_ZERO)
 assert test.is_useless() == False
 
 """ test of normalise """
-test = Condition(Side(a, g3), Side(), StateConditions.IS_EQUAL)
-test2 = Condition(Side(g3), Side(a), StateConditions.IS_EQUAL)
+test = Condition(Side(a, g3), Side(), ConditionState.IS_EQUAL)
+test2 = Condition(Side(g3), Side(a), ConditionState.IS_EQUAL)
 test.normalise()
 assert test == test2
 
-test = Condition(Side(), Side(a, g3), StateConditions.IS_EQUAL)
-test2 = Condition(Side(g3), Side(a), StateConditions.IS_EQUAL)
+test = Condition(Side(), Side(a, g3), ConditionState.IS_EQUAL)
+test2 = Condition(Side(g3), Side(a), ConditionState.IS_EQUAL)
 test.normalise()
 assert test == test2
 
 """ test of swap """
 test = Side(a, a3)
 test2 = Side(g1, g2)
-cond = Condition(test, test2, StateConditions.IS_EQUAL)
+cond = Condition(test, test2, ConditionState.IS_EQUAL)
 cond.swap_sides()
 assert cond.get_left_side() == test2 and cond.get_right_side() == test
 
 """ test of update"""
-c = Condition(Side(a, a2, a3), Side(g1, a3), StateConditions.IS_EQUAL)
-c1 = Condition(Side(a), Side(g3), StateConditions.IS_EQUAL)
+c = Condition(Side(a, a2, a3), Side(g1, a3), ConditionState.IS_EQUAL)
+c1 = Condition(Side(a), Side(g3), ConditionState.IS_EQUAL)
 
 c.update_with(c1)
-c2 = Condition(Side(g3), Side(g1, a2), StateConditions.IS_EQUAL)
+c2 = Condition(Side(g3), Side(g1, a2), ConditionState.IS_EQUAL)
 
 assert c == c2
 
-c = Condition(Side(a, a2, a3), Side(a, g3), StateConditions.IS_EQUAL)
-c1 = Condition(Side(a), Side(a2, a3), StateConditions.IS_EQUAL)
-c2 = Condition(Side(g3), Side(a2, a3), StateConditions.IS_EQUAL)
+c = Condition(Side(a, a2, a3), Side(a, g3), ConditionState.IS_EQUAL)
+c1 = Condition(Side(a), Side(a2, a3), ConditionState.IS_EQUAL)
+c2 = Condition(Side(g3), Side(a2, a3), ConditionState.IS_EQUAL)
 c.update_with(c1)
 assert c == c2
 
-c = Condition(Side(a, a2, a3, g3), Side(), StateConditions.IS_NOT_ZERO)
-c1 = Condition(Side(a), Side(a2, a3), StateConditions.IS_EQUAL)
+c = Condition(Side(a, a2, a3, g3), Side(), ConditionState.IS_NOT_ZERO)
+c1 = Condition(Side(a), Side(a2, a3), ConditionState.IS_EQUAL)
 
-c2 = Condition(Side(g3), Side(), StateConditions.IS_NOT_ZERO)
+c2 = Condition(Side(g3), Side(), ConditionState.IS_NOT_ZERO)
 c.update_with(c1)
 
 assert c == c2
 
-c = Condition(Side(a, a2, a3, g3), Side(g2), StateConditions.IS_EQUAL)
-c1 = Condition(Side(a, a2), Side(), StateConditions.IS_NOT_ZERO)
+c = Condition(Side(a, a2, a3, g3), Side(g2), ConditionState.IS_EQUAL)
+c1 = Condition(Side(a, a2), Side(), ConditionState.IS_NOT_ZERO)
 
-c2 = Condition(Side(a, a2, a3, g3), Side(g2), StateConditions.IS_EQUAL)
+c2 = Condition(Side(a, a2, a3, g3), Side(g2), ConditionState.IS_EQUAL)
 c.update_with(c1)
 
 assert c == c2
 
 """test of compare """
-c = Condition(Side(a, a2, a3, g3), Side(g2), StateConditions.IS_EQUAL)
-c_copy = Condition(Side(a, a2, a3, g3), Side(g2), StateConditions.IS_EQUAL)
-c2 = Condition(Side(a, a2, a3, g3, g2), Side(), StateConditions.IS_NOT_ZERO)
-c2_copy = Condition(Side(a, a2, a3, g3, g2), Side(), StateConditions.IS_NOT_ZERO)
+c = Condition(Side(a, a2, a3, g3), Side(g2), ConditionState.IS_EQUAL)
+c_copy = Condition(Side(a, a2, a3, g3), Side(g2), ConditionState.IS_EQUAL)
+c2 = Condition(Side(a, a2, a3, g3, g2), Side(), ConditionState.IS_NOT_ZERO)
+c2_copy = Condition(Side(a, a2, a3, g3, g2), Side(), ConditionState.IS_NOT_ZERO)
 assert c.compare_conditions(c2) == CompareCondition.CONTRADICTION
 assert c == c_copy and c2 == c2_copy
 
 
-c = Condition(Side(a, g3), Side(), StateConditions.IS_ZERO)
-c_copy = Condition(Side(a, g3), Side(), StateConditions.IS_ZERO)
-c2 = Condition(Side(a, g3), Side(a2, a3, g2), StateConditions.IS_EQUAL)
-c2_copy = Condition(Side(a, g3), Side(a2, a3, g2), StateConditions.IS_EQUAL)
+c = Condition(Side(a, g3), Side(), ConditionState.IS_ZERO)
+c_copy = Condition(Side(a, g3), Side(), ConditionState.IS_ZERO)
+c2 = Condition(Side(a, g3), Side(a2, a3, g2), ConditionState.IS_EQUAL)
+c2_copy = Condition(Side(a, g3), Side(a2, a3, g2), ConditionState.IS_EQUAL)
 assert c.compare_conditions(c2) == CompareCondition.NOT_EQUAL
 assert c == c_copy and c2 == c2_copy
 
-c = Condition(Side(a), Side(g3, g2), StateConditions.IS_EQUAL)
-c_copy = Condition(Side(a), Side(g3, g2), StateConditions.IS_EQUAL)
-c2 = Condition(Side(g3), Side(a, g2), StateConditions.IS_EQUAL)
-c2_copy = Condition(Side(g3), Side(a, g2), StateConditions.IS_EQUAL)
+c = Condition(Side(a), Side(g3, g2), ConditionState.IS_EQUAL)
+c_copy = Condition(Side(a), Side(g3, g2), ConditionState.IS_EQUAL)
+c2 = Condition(Side(g3), Side(a, g2), ConditionState.IS_EQUAL)
+c2_copy = Condition(Side(g3), Side(a, g2), ConditionState.IS_EQUAL)
 assert c.compare_conditions(c2) == CompareCondition.EQUAL
 assert c == c_copy and c2 == c2_copy
 
-c = Condition(Side(a), Side(), StateConditions.IS_NOT_ZERO)
-c2 = Condition(Side(g3), Side(), StateConditions.IS_NOT_ZERO)
+c = Condition(Side(a), Side(), ConditionState.IS_NOT_ZERO)
+c2 = Condition(Side(g3), Side(), ConditionState.IS_NOT_ZERO)
 assert c.compare_conditions(c2) == CompareCondition.NOT_EQUAL
 """  """
 
-c = Condition(Side(a, a2, a3), Side(g1, a3), StateConditions.IS_EQUAL)
-c1 = Condition(Side(a), Side(g3), StateConditions.IS_EQUAL)
-c2 = Condition(Side(a, a2), Side(g1), StateConditions.IS_EQUAL)
+c = Condition(Side(a, a2, a3), Side(g1, a3), ConditionState.IS_EQUAL)
+c1 = Condition(Side(a), Side(g3), ConditionState.IS_EQUAL)
+c2 = Condition(Side(a, a2), Side(g1), ConditionState.IS_EQUAL)
 # c1 = Condition(Side(a, a2), Side(g1), StateConditions.IS_ZERO)
-c3 = Condition(Side(g3), Side(), StateConditions.IS_ZERO)
-c4 = Condition(Side(g2), Side(), StateConditions.IS_ZERO)
+c3 = Condition(Side(g3), Side(), ConditionState.IS_ZERO)
+c4 = Condition(Side(g2), Side(), ConditionState.IS_ZERO)
 
 
 cc = CustomConditions()

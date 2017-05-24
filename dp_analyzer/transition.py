@@ -1,6 +1,6 @@
 from side import Side
-from conditions import Condition
-from conditions import StateConditions
+from condition import Condition
+from condition import ConditionState
 from typing import Union
 from mypy_extensions import NoReturn
 from logger import logger
@@ -56,7 +56,7 @@ class Transition(object):
         :param condition:
         :return:
         """
-        if condition.get_state() == StateConditions.IS_NOT_ZERO:
+        if condition.get_state() == ConditionState.IS_NOT_ZERO:
             logger.warn("Can not apply NOT_ZERO condition: {}".format(condition))
             return
 

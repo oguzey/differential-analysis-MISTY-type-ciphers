@@ -2,7 +2,7 @@ from typing import List, Tuple
 from functools import cmp_to_key
 from variable import Variable
 from side import Side
-from conditions import Condition, StateConditions
+from condition import Condition, ConditionState
 
 
 class CommonConditionGenerator(object):
@@ -55,8 +55,8 @@ class CommonConditionGenerator(object):
             none_zero_conds = []  # type: List[Condition]
             for index in range(len(variables)):
                 if index in zero_pos:
-                    zero_conds.append(Condition(Side(variables[index]), Side(), StateConditions.IS_ZERO))
+                    zero_conds.append(Condition(Side(variables[index]), Side(), ConditionState.IS_ZERO))
                 else:
-                    none_zero_conds.append(Condition(Side(variables[index]), Side(), StateConditions.IS_NOT_ZERO))
+                    none_zero_conds.append(Condition(Side(variables[index]), Side(), ConditionState.IS_NOT_ZERO))
             cconditions.append((zero_conds, none_zero_conds))
         return cconditions
