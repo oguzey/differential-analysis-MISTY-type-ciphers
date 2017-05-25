@@ -10,7 +10,7 @@ from os.path import join as path_join
 from os import rename, getcwd
 import sys
 from sympy import Symbol
-
+import inspect
 
 class SystemTransitionType(Enum):
     """
@@ -183,15 +183,17 @@ class SystemTransition(object):
             if nzcondition.update_with(condition):
                 self.dump_system("Conditions after apply condition {}".format(condition), with_trans=False)
             if not nzcondition.is_correct():
-                raise ConditionException("Contradiction detected '{}'".format(nzcondition))
+                func = inspect.currentframe().f_back.f_code
+                raise ConditionException("[{}:{}] Contradiction detected '{}'".format(func.co_name, func.co_firstlineno, nzcondition))
 
         new_zero_conds = []
         useless_econds = []
         for econdition in self._conds_equals:
             if econdition.update_with(condition):
-                self.dump_system("Conditions after apply condition {}".format(condition), with_trans=False)
+                self.dump_system("[_use_and_append_zero_cond] Conditions after apply condition {}".format(condition), with_trans=False)
             if not econdition.is_correct():
-                raise ConditionException("Contradiction detected '{}'".format(econdition))
+                func = inspect.currentframe().f_back.f_code
+                raise ConditionException("[{}:{}] Contradiction detected '{}'".format(func.co_name, func.co_firstlineno, econdition))
             if econdition.get_state() == ConditionState.IS_ZERO:
                 #  condition was converted
                 new_zero_conds.append(econdition)
@@ -237,10 +239,6 @@ class SystemTransition(object):
             if transition.has_empty_side():
                 null_trans.append(transition)
                 continue
-            # if custom_conds.is_side_non_zero(transition.get_left_side(), additional_conditions=self._common_non_zero_conds):
-            #     custom_conds.append_condition(Condition.create_non_zero_condition(transition.get_right_side()))
-            # elif custom_conds.is_side_non_zero(transition.get_right_side(), additional_conditions=self._common_non_zero_conds):
-            #     custom_conds.append_condition(Condition.create_non_zero_condition(transition.get_left_side()))
 
         for transition in null_trans:
             self.__transitions.remove(transition)
@@ -261,6 +259,27 @@ class SystemTransition(object):
             if nzcondition.get_left_side() == side:
                 return True
         return False
+
+    def _generate_new_non_zero_conds(self) -> None:
+        for transition in self.__transitions:
+            left = transition.get_left_side()
+            right = transition.get_right_side()
+            if self._is_side_non_zero(left):
+                if right.is_empty():
+                    func = inspect.currentframe().f_back.f_code
+                    raise ConditionException(
+                        "[{}:{}] Contradiction detected in '{}'. '{}' != 0 but '{}' = 0"
+                            .format(func.co_name, func.co_firstlineno, transition, left, right))
+                else:
+                    self._conds_non_zero.append(Condition.create_non_zero_condition(right.copy()))
+            elif self._is_side_non_zero(right):
+                if left.is_empty():
+                    func = inspect.currentframe().f_back.f_code
+                    raise ConditionException(
+                        "[{}:{}] Contradiction detected in '{}'. '{}' != 0 but '{}' = 0"
+                            .format(func.co_name, func.co_firstlineno, transition, right, left))
+                else:
+                    self._conds_non_zero.append(Condition.create_non_zero_condition(left.copy()))
 
     def __set_fail_state(self) -> None:
         """
@@ -289,7 +308,7 @@ class SystemTransition(object):
                 # return
         except ConditionException as ce:
             logger.info("System has contradiction conditions: {}".format(ce))
-            self.dump_system('System has contradiction conditions')
+            self.dump_system('Meet with contradiction: {}'.format(ce))
             self.__set_fail_state()
 
         finally:
@@ -308,6 +327,8 @@ class SystemTransition(object):
             for condition in self._common_zero_conds:
                 self._use_and_append_zero_cond(condition)
             self.dump_system('After applied zero conditions')
+            self._generate_new_non_zero_conds()
+            self.dump_system('Generated new non zero conditions')
 
         self._apply_equals_conditions()
         self.dump_system('After applied equals conditions')
