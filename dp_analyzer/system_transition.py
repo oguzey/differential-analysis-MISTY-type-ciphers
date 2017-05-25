@@ -301,21 +301,16 @@ class SystemTransition(object):
             #  System was cloned from other system
             if self._parent is not None:
                 self._parent.dump_system('Parent was', self._logger.info)
-            #  Just check contradiction
-            self._apply_equals_conditions()
-            self.dump_system("Applied equals conditions")
-            return
+        else:
+            self.dump_system('Simplifying new system', with_common_conds=True)
+            # Apply all zero conditions and drop them as variables became zero
 
-        self.dump_system('Simplifying new system', with_common_conds=True)
-        # Apply all zero conditions and drop them as variables became zero
+            for condition in self._common_zero_conds:
+                self._use_and_append_zero_cond(condition)
+            self.dump_system('After applied zero conditions')
 
-        for condition in self._common_zero_conds:
-            self._use_and_append_zero_cond(condition)
-
-        self.dump_system('After applied zero conditions')
         self._apply_equals_conditions()
         self.dump_system('After applied equals conditions')
-        return
 
     def _estimate_internal(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
         count_triviality = 0
@@ -399,6 +394,7 @@ class SystemTransition(object):
                 logger.debug("New zero conditions '{}' and '{}'".format(left_zc, right_zc))
                 self._use_and_append_zero_cond(left_zc)
                 self._use_and_append_zero_cond(right_zc)
+                self._remove_empty_transitions()
                 continue
 
         # TODO: Estimate system at the end function
