@@ -40,7 +40,15 @@ class Variable(object):
         self.__loperators = []  # type: List[Union[ConstrictorLinearOperator, ExtenderLinearOperator]]
 
     def __eq__(self, other: 'Variable') -> bool:
-        return self.__type == other.__type and self.__id == other.__id
+        if not (self.__type == other.__type and self.__id == other.__id):
+            return False
+        elif len(self.__loperators) != len(other.__loperators):
+            return False
+        else:
+            for index in range(len(self.__loperators)):
+                if self.__loperators[index] != other.__loperators[index]:
+                    return False
+            return True
 
     def __ne__(self, other: 'Variable') -> bool:
         return not self.__eq__(other)
@@ -81,7 +89,7 @@ class Variable(object):
         #  XXX: Variable.__id will be increasing
         x = Variable(self.__type, self.__id)
         for lop in self.__loperators:
-            x.apply_lin_oper(lop)
+            x.apply_lin_oper(lop.clone())
         return x
 
     def apply_lin_oper(self, lin_op: Union[ConstrictorLinearOperator, ExtenderLinearOperator]):

@@ -6,7 +6,7 @@ from condition import Condition
 from common_condition_generator import CommonConditionGenerator
 from variable import Variable, TypeVariable
 from transition import Transition, BlockFunction
-from linear_operator import ExtenderLinearOperator, ConstrictorLinearOperator
+from linear_operator import LOMu, LOLambda
 from side import Side
 from typing import List
 import multiprocessing as mp
@@ -114,11 +114,11 @@ if __name__ == "__main__":
     c1 = Variable(TypeVariable.OUTPUT)
     c2 = Variable(TypeVariable.OUTPUT)
 
-    ext_lin_oper = ExtenderLinearOperator("μ")
-    con_lin_oper = ConstrictorLinearOperator("λ")
+    mu = LOMu()
+    lmbda = LOLambda()
 
-    trans = [Transition(Side(a1), Side(b1, clone_with_use_oper(a2, ext_lin_oper)), BlockFunction('F', 'p')),
-             Transition(Side(a2), Side(c2, clone_with_use_oper(b1, con_lin_oper)), BlockFunction('G', 'q')),
-             Transition(Side(b1), Side(c1, clone_with_use_oper(c2, ext_lin_oper)), BlockFunction('F', 'p'))]
+    trans = [Transition(Side(a1), Side(b1, clone_with_use_oper(a2, mu)), BlockFunction('F', 'p')),
+             Transition(Side(a2), Side(c2, clone_with_use_oper(b1, lmbda)), BlockFunction('G', 'q')),
+             Transition(Side(b1), Side(c1, clone_with_use_oper(c2, mu)), BlockFunction('F', 'p'))]
 
     main(trans, [a1, a2], [c1, c2], amount_workers=1)
