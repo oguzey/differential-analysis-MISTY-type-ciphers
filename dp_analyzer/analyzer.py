@@ -4,7 +4,7 @@ from logger import logger
 from system_transition import SystemTransition
 from condition import Condition
 from common_condition_generator import CommonConditionGenerator
-from variable import Variable, TypeVariable
+from variable import Variable, VariableType
 from transition import Transition, BlockFunction
 from linear_operator import LOMu, LOLambda
 from side import Side
@@ -106,13 +106,13 @@ def clone_with_use_oper(var, op):
 
 if __name__ == "__main__":
 
-    a1 = Variable(TypeVariable.INPUT)
-    a2 = Variable(TypeVariable.INPUT)
+    a1 = Variable(VariableType.INPUT)
+    a2 = Variable(VariableType.INPUT)
 
-    b1 = Variable(TypeVariable.UNKNOWN)
+    b1 = Variable(VariableType.UNKNOWN)
 
-    c1 = Variable(TypeVariable.OUTPUT)
-    c2 = Variable(TypeVariable.OUTPUT)
+    c1 = Variable(VariableType.OUTPUT)
+    c2 = Variable(VariableType.OUTPUT)
 
     mu = LOMu()
     lmbda = LOLambda()

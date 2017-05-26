@@ -2,17 +2,17 @@ from condition import Condition
 from side import Side
 from condition import ConditionState
 from variable import Variable
-from variable import TypeVariable
+from variable import VariableType
 from condition import CustomConditions
 from condition import CompareCondition
 
-a = Variable(TypeVariable.INPUT)
-a2 = Variable(TypeVariable.INPUT)
-a3 = Variable(TypeVariable.INPUT)
+a = Variable(VariableType.INPUT)
+a2 = Variable(VariableType.INPUT)
+a3 = Variable(VariableType.INPUT)
 
-g1 = Variable(TypeVariable.OUTPUT)
-g2 = Variable(TypeVariable.OUTPUT)
-g3 = Variable(TypeVariable.OUTPUT)
+g1 = Variable(VariableType.OUTPUT)
+g2 = Variable(VariableType.OUTPUT)
+g3 = Variable(VariableType.OUTPUT)
 
 # """ test of contradictions """
 # test = Condition(Side(a), Side(), StateConditions.IS_ZERO)

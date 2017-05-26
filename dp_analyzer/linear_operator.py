@@ -35,13 +35,10 @@ class LinearOperator(object):
             return self._name
 
     def make_inverse(self) -> None:
-        self._is_inverse = True
+        self._is_inverse = not self._is_inverse
 
     def is_inverse(self) -> bool:
         return self._is_inverse
-
-    def reset_inverse(self) -> None:
-        self._is_inverse = False
 
 
 class ExtenderLinearOperator(LinearOperator):

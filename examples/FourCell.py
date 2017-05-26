@@ -1,38 +1,38 @@
 from variable import Variable
-from variable import TypeVariable
+from variable import VariableType
 from side import Side
 from transition import Transition
 from transition import SystemTransition
 
-a1 = Variable(TypeVariable.INPUT)
-a2 = Variable(TypeVariable.INPUT)
-a3 = Variable(TypeVariable.INPUT)
-a4 = Variable(TypeVariable.INPUT)
-a5 = Variable(TypeVariable.INPUT)
+a1 = Variable(VariableType.INPUT)
+a2 = Variable(VariableType.INPUT)
+a3 = Variable(VariableType.INPUT)
+a4 = Variable(VariableType.INPUT)
+a5 = Variable(VariableType.INPUT)
 
-g1 = Variable(TypeVariable.OUTPUT)
-g2 = Variable(TypeVariable.OUTPUT)
-g3 = Variable(TypeVariable.OUTPUT)
-g4 = Variable(TypeVariable.OUTPUT)
-g5 = Variable(TypeVariable.OUTPUT)
+g1 = Variable(VariableType.OUTPUT)
+g2 = Variable(VariableType.OUTPUT)
+g3 = Variable(VariableType.OUTPUT)
+g4 = Variable(VariableType.OUTPUT)
+g5 = Variable(VariableType.OUTPUT)
 
-b1 = Variable(TypeVariable.UNKNOWN)
-b2 = Variable(TypeVariable.UNKNOWN)
-b3 = Variable(TypeVariable.UNKNOWN)
-b4 = Variable(TypeVariable.UNKNOWN)
-b5 = Variable(TypeVariable.UNKNOWN)
-b6 = Variable(TypeVariable.UNKNOWN)
-b7 = Variable(TypeVariable.UNKNOWN)
-b8 = Variable(TypeVariable.UNKNOWN)
-b9 = Variable(TypeVariable.UNKNOWN)
-b10 = Variable(TypeVariable.UNKNOWN)
-b11 = Variable(TypeVariable.UNKNOWN)
-b12 = Variable(TypeVariable.UNKNOWN)
-b13 = Variable(TypeVariable.UNKNOWN)
-b14 = Variable(TypeVariable.UNKNOWN)
-b15 = Variable(TypeVariable.UNKNOWN)
-b16 = Variable(TypeVariable.UNKNOWN)
-b17 = Variable(TypeVariable.UNKNOWN)
+b1 = Variable(VariableType.UNKNOWN)
+b2 = Variable(VariableType.UNKNOWN)
+b3 = Variable(VariableType.UNKNOWN)
+b4 = Variable(VariableType.UNKNOWN)
+b5 = Variable(VariableType.UNKNOWN)
+b6 = Variable(VariableType.UNKNOWN)
+b7 = Variable(VariableType.UNKNOWN)
+b8 = Variable(VariableType.UNKNOWN)
+b9 = Variable(VariableType.UNKNOWN)
+b10 = Variable(VariableType.UNKNOWN)
+b11 = Variable(VariableType.UNKNOWN)
+b12 = Variable(VariableType.UNKNOWN)
+b13 = Variable(VariableType.UNKNOWN)
+b14 = Variable(VariableType.UNKNOWN)
+b15 = Variable(VariableType.UNKNOWN)
+b16 = Variable(VariableType.UNKNOWN)
+b17 = Variable(VariableType.UNKNOWN)
 
 # 3 blocks
 three_blocks_systems = {}

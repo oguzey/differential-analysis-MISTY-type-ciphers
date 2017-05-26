@@ -105,11 +105,16 @@ class Condition(object):
             return False
         if len(self.__left_side) == 1 and len(self.__right_side) == 0 and self.__state == ConditionState.IS_ZERO:
             return False
-        # FIXME: it is possible case that [0(left)] IS_EQUAL [a1, ... (rigth)]
+        assert self.__state == ConditionState.IS_ZERO if (not self.__left_side.is_empty() and self.__right_side.is_empty()) else True
+
         self.__right_side.merge_side(self.__left_side)
         var = self.__right_side.pop_the_latest_variable()
         if var:
             self.__left_side.add_variable(var)
+            assert len(self.__right_side) == 0 or len(self.__right_side) == 1
+            var_r = self.__right_side.pop_first_variable()
+            var.move_operators(var_r)
+            self.__right_side.add_variable(var_r)
         self.__state = ConditionState.IS_ZERO if self.__right_side.is_empty() else ConditionState.IS_EQUAL
         return True
 
@@ -148,7 +153,6 @@ class Condition(object):
             return CompareCondition.CONTRADICTION
         side_self, state_self = self.__get_all_in_left_side()
         side_other, state_other = other.__get_all_in_left_side()
-        # logger.debug("[compare_conditions] %s vs %s" % (str(self), str(other))
         if side_self == side_other:
             return CompareCondition.EQUAL if state_self == state_other else CompareCondition.CONTRADICTION
         else:

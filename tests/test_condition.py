@@ -2,7 +2,7 @@ if __name__ == "__main__":
     import sys
     sys.path.append("dp_analyzer")
 import pytest
-from variable import Variable, TypeVariable
+from variable import Variable, VariableType
 from common_condition_generator import CommonConditionGenerator
 from analyzer import zero_conds_to_str, non_zero_conds_to_str
 from condition import Condition, ConditionState
@@ -12,10 +12,10 @@ from logger import logger
 
 def setup_module(module):
     global a1, a2, a3, a4
-    a1 = Variable(TypeVariable.INPUT)
-    a2 = Variable(TypeVariable.INPUT)
-    a3 = Variable(TypeVariable.INPUT)
-    a4 = Variable(TypeVariable.INPUT)
+    a1 = Variable(VariableType.INPUT)
+    a2 = Variable(VariableType.INPUT)
+    a3 = Variable(VariableType.INPUT)
+    a4 = Variable(VariableType.INPUT)
 
 
 def test_generate_conditions():

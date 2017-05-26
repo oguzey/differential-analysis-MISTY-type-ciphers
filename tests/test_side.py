@@ -1,5 +1,5 @@
 import pytest
-from variable import Variable, TypeVariable
+from variable import Variable, VariableType
 import side
 
 
@@ -7,16 +7,16 @@ def setup_module(module):
     global a_in
     global b_out
     global n_unk
-    a_in = Variable(TypeVariable.INPUT)
-    b_out = Variable(TypeVariable.OUTPUT)
-    n_unk = Variable(TypeVariable.UNKNOWN)
+    a_in = Variable(VariableType.INPUT)
+    b_out = Variable(VariableType.OUTPUT)
+    n_unk = Variable(VariableType.UNKNOWN)
 
 
 def test_side_equal():
-    a = Variable(TypeVariable.INPUT)
-    b = Variable(TypeVariable.INPUT)
-    c = Variable(TypeVariable.OUTPUT)
-    d = Variable(TypeVariable.UNKNOWN)
+    a = Variable(VariableType.INPUT)
+    b = Variable(VariableType.INPUT)
+    c = Variable(VariableType.OUTPUT)
+    d = Variable(VariableType.UNKNOWN)
 
     x = side.Side(a, a, b, c)
     y = side.Side(a, b, b, c)

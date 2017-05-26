@@ -1,6 +1,6 @@
-from variable import Variable, TypeVariable
+from variable import Variable, VariableType
 from logger import logger
-from typing import List, Union
+from typing import List, Union, Optional
 from mypy_extensions import NoReturn
 
 
@@ -40,17 +40,17 @@ class Side(object):
     def contains_element(self, element: Variable) -> bool:
         return element in self.__vars
 
-    def __contains_as_type(self, type_var: TypeVariable) -> bool:
+    def __contains_as_type(self, type_var: VariableType) -> bool:
         return any([var.has_type(type_var) for var in self.__vars])
 
     def contains_unknown(self) -> bool:
-        return self.__contains_as_type(TypeVariable.UNKNOWN)
+        return self.__contains_as_type(VariableType.UNKNOWN)
 
     def contains_output(self) -> bool:
-        return self.__contains_as_type(TypeVariable.OUTPUT)
+        return self.__contains_as_type(VariableType.OUTPUT)
 
     def contains_intput(self) -> bool:
-        return self.__contains_as_type(TypeVariable.INPUT)
+        return self.__contains_as_type(VariableType.INPUT)
 
     def is_trivial(self) -> bool:
         return all(map(lambda x: not x.is_unknown(), self.__vars))
@@ -68,7 +68,7 @@ class Side(object):
                 ids.append(var.get_id())
         return ids
 
-    def __find_the_latest(self, type_var: TypeVariable) -> Union[Variable, NoReturn]:
+    def __find_the_latest(self, type_var: VariableType) -> Union[Variable, NoReturn]:
         max_var = None
         for var in self.__vars:
             if var.has_type(type_var):
@@ -80,13 +80,13 @@ class Side(object):
         return max_var
 
     def find_the_latest_unknown(self) -> Union[Variable, NoReturn]:
-        return self.__find_the_latest(TypeVariable.UNKNOWN)
+        return self.__find_the_latest(VariableType.UNKNOWN)
 
     def find_the_latest_output(self) -> Union[Variable, NoReturn]:
-        return self.__find_the_latest(TypeVariable.OUTPUT)
+        return self.__find_the_latest(VariableType.OUTPUT)
 
     def find_the_latest_input(self) -> Union[Variable, NoReturn]:
-        return self.__find_the_latest(TypeVariable.INPUT)
+        return self.__find_the_latest(VariableType.INPUT)
 
     def has_only_one_unknown(self) -> bool:
         return len(self.__vars) == 1 and self.__vars[0].is_unknown()
@@ -94,7 +94,18 @@ class Side(object):
     def pop_variable(self, var: Variable) -> None:
         self.__vars.remove(var)
 
-    def __pop_all_by_type(self, type_var: TypeVariable) -> List[Variable]:
+    def pop_first_variable(self) -> Optional[Variable]:
+        if len(self.__vars):
+            return self.__vars.pop(0)
+        else:
+            return None
+
+    def add_variable(self, var:Optional[Variable]) -> None:
+        if var is None:
+            return
+        self.__vars.append(var)
+
+    def __pop_all_by_type(self, type_var: VariableType) -> List[Variable]:
         elements = []
         for elem in self.__vars:
             if elem.has_type(type_var):
@@ -106,7 +117,7 @@ class Side(object):
         return elements
 
     def pop_all_unknowns(self) -> List[Variable]:
-        return self.__pop_all_by_type(TypeVariable.UNKNOWN)
+        return self.__pop_all_by_type(VariableType.UNKNOWN)
 
     def replace_in_side(self, would_repl: 'Side', replacement: 'Side') -> None:
         """ all variables in 'would_repl' will be replaced to 'replacement' """
