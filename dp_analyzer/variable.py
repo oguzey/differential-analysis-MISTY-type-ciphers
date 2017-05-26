@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Dict, List, Union, Optional
 from linear_operator import LOLambda, LOMu
+from counter import Counter
 
 
 class VariableType(Enum):
@@ -20,27 +21,19 @@ class Variable(object):
     # __k__ - coefficient for calculation hash of Variable
     __k__ = 1000000000  # type: int
     __id__ = {
-        VariableType.INPUT: 1,
-        VariableType.OUTPUT: 1,
-        VariableType.UNKNOWN: 1,
-        VariableType.ZERO: 1
-    }  # type: Dict[Enum, int]
-    instances = {
-        VariableType.INPUT: [],
-        VariableType.OUTPUT: [],
-        VariableType.UNKNOWN: [],
-        VariableType.ZERO: []
-    }  # type: Dict[Enum, List[Variable]]
+        VariableType.INPUT: Counter(),
+        VariableType.OUTPUT: Counter(),
+        VariableType.UNKNOWN: Counter(),
+        VariableType.ZERO: Counter()
+    }  # type: Dict[Enum, Counter]
 
     def __init__(self, type_var: VariableType, id: int=None) -> None:
         super(Variable, self).__init__()
-        Variable.instances[type_var].append(self)
         if id is not None:
             self.__id = id
         else:
-            self.__id = Variable.__id__[type_var]  # type: int
-        # TODO: make it thread save
-        Variable.__id__[type_var] += 1
+            self.__id = Variable.__id__[type_var].increment()  # type: int
+
         self.__type = type_var  # type: VariableType
         self.__hash = Variable.__k__ * int(self.__type.value) + self.__id  # type: int
         self.__loperators = []  # type: List[Union[LOLambda, LOMu]]
@@ -92,7 +85,6 @@ class Variable(object):
         return self.__id
 
     def clone(self) -> 'Variable':
-        #  XXX: Variable.__id will be increasing
         x = Variable(self.__type, self.__id)
         for lop in self.__loperators:
             x.apply_lin_oper(lop.clone())

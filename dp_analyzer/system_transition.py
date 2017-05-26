@@ -4,13 +4,14 @@ from side import Side
 from logger import logger
 from typing import List, Callable, Set
 from enum import Enum
-from multiprocessing import Value, Lock
+from counter import Counter
 import logging
 from os.path import join as path_join
 from os import rename, getcwd
 import sys
 from sympy import Symbol
 import inspect
+
 
 class SystemTransitionType(Enum):
     """
@@ -19,21 +20,6 @@ class SystemTransitionType(Enum):
     """
     INTERMEDIATE = 0
     LAST = 1
-
-
-class Counter(object):
-    def __init__(self, initval=0):
-        self.val = Value('i', initval)
-        self.lock = Lock()
-
-    def increment(self):
-        with self.lock:
-            self.val.value += 1
-            return self.val.value
-
-    def value(self):
-        with self.lock:
-            return self.val.value
 
 
 class SystemTransition(object):
