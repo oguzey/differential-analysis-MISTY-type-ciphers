@@ -23,12 +23,6 @@ class ConditionState(Enum):
         }.get(self, '')
 
 
-class CompareCondition(Enum):
-    CONTRADICTION = 0
-    NOT_EQUAL = 1
-    EQUAL = 2
-
-
 class Condition(object):
     """ Describes conditions for system of transitions"""
     def __init__(self, left_side: Side, right_side: Side, state: ConditionState) -> None:
@@ -91,11 +85,6 @@ class Condition(object):
             return True
         return False
 
-    def swap_sides(self) -> None:
-        new_left_side = self.__right_side
-        self.__right_side = self.__left_side
-        self.__left_side = new_left_side
-
     def normalise(self) -> bool:
         """
         Bring condition to particular format: a = b + c + ...
@@ -122,6 +111,7 @@ class Condition(object):
         if condition.__state == ConditionState.IS_NOT_ZERO:
             return True
 
+        assert len(condition.__left_side) <= 1 and len(condition.__right_side) <= 1
         res = False
         if self.__right_side.contains(condition.__left_side):
             self.__right_side.replace_in_side(condition.__left_side, condition.__right_side)
@@ -133,35 +123,11 @@ class Condition(object):
         res2 = self.normalise()
         return res or res2
 
-    def __get_all_in_left_side(self) -> Tuple[Side, ConditionState]:
-        if self.__state == ConditionState.IS_NOT_ZERO:
-            return self.__left_side, self.__state
-        else:
-            c = self.__right_side.copy()
-            c.add_side(self.__left_side)
-            return c, ConditionState.IS_ZERO
-
-    def compare_conditions(self, other: 'Condition') -> CompareCondition:
-        """
-        can return
-            CompareCondition.EQUAL
-            CompareCondition.CONTRADICTION
-            CompareCondition.NOT_EQUAL
-        """
-        assert isinstance(other, Condition)
-        if not self.is_correct() or not other.is_correct():
-            return CompareCondition.CONTRADICTION
-        side_self, state_self = self.__get_all_in_left_side()
-        side_other, state_other = other.__get_all_in_left_side()
-        if side_self == side_other:
-            return CompareCondition.EQUAL if state_self == state_other else CompareCondition.CONTRADICTION
-        else:
-            return CompareCondition.NOT_EQUAL
-
     @staticmethod
     def create_zero_condition(side: Side) -> 'Condition':
-        assert isinstance(side, Side) and not side.is_empty()
+        assert isinstance(side, Side) and not side.is_empty() and len(side) <= 2
         var = side.pop_the_latest_variable()
+        # TODO: simplify condition here
         return Condition(Side(var), side, ConditionState.IS_ZERO if side.is_empty() else ConditionState.IS_EQUAL)
 
     @staticmethod

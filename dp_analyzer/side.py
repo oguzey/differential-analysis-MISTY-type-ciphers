@@ -100,11 +100,6 @@ class Side(object):
         else:
             return None
 
-    def add_variable(self, var:Optional[Variable]) -> None:
-        if var is None:
-            return
-        self.__vars.append(var)
-
     def __pop_all_by_type(self, type_var: VariableType) -> List[Variable]:
         elements = []
         for elem in self.__vars:
@@ -130,7 +125,9 @@ class Side(object):
         # add all elements from replacement to self
         self.add_side(replacement)
 
-    def add_variable(self, variable: Variable) -> None:
+    def add_variable(self, variable: Optional[Variable]) -> None:
+        if variable is None:
+            return
         if self.contains_element(variable):
             self.pop_variable(variable)
         else:
