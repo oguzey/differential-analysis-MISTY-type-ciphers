@@ -4,13 +4,11 @@ from logger import logger
 from system_transition import SystemTransition
 from condition import Condition
 from common_condition_generator import CommonConditionGenerator
-from variable import Variable, VariableType
-from transition import Transition, BlockFunction
-from linear_operator import LOMu, LOLambda
-from side import Side
 from typing import List
 import multiprocessing as mp
-import time
+from os.path import join as path_join
+from os import getcwd, makedirs
+from data.vars import System
 
 
 def zero_conds_to_str(zero_conds: List[Condition]) -> str:
@@ -97,28 +95,16 @@ def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
     # logger.info("Total fails is %d" % fails)
     # logger.info("Total estimated is %d" % estimated)
 
-
-def clone_with_use_oper(var, op):
-    tmp = var.clone()
-    tmp.apply_lin_oper(op)
-    return tmp
-
-
 if __name__ == "__main__":
 
-    a1 = Variable(VariableType.INPUT)
-    a2 = Variable(VariableType.INPUT)
+    root_log_path = path_join(getcwd(), "logs")
+    makedirs(root_log_path, exist_ok=True)
+    SystemTransition.set_base_log_path(root_log_path)
 
-    b1 = Variable(VariableType.UNKNOWN)
-
-    c1 = Variable(VariableType.OUTPUT)
-    c2 = Variable(VariableType.OUTPUT)
-
-    mu = LOMu()
-    lmbda = LOLambda()
-
-    trans = [Transition(Side(a1), Side(b1, clone_with_use_oper(a2, mu)), BlockFunction('F', 'p')),
-             Transition(Side(a2), Side(c2, clone_with_use_oper(b1, lmbda)), BlockFunction('G', 'q')),
-             Transition(Side(b1), Side(c1, clone_with_use_oper(c2, mu)), BlockFunction('F', 'p'))]
-
-    main(trans, [a1, a2], [c1, c2], amount_workers=1)
+    from data.misty import systems, cipher_name
+    for amount_rounds in sorted(list(systems.keys())):
+        system_log_path = path_join(root_log_path, str(cipher_name), '{}_rounds'.format(amount_rounds))
+        makedirs(system_log_path, exist_ok=True)
+        SystemTransition.set_base_log_path(system_log_path)
+        system = systems[amount_rounds]
+        main(system.transitions, system.inputs, system.outputs, amount_workers=1)

@@ -24,7 +24,11 @@ class SystemTransitionType(Enum):
 
 class SystemTransition(object):
     __id = Counter()
-    base_log_path = path_join(getcwd(), "../logs/run_logs")
+    _base_log_path = path_join(getcwd(), "logs")  # type: str
+
+    @staticmethod
+    def set_base_log_path(log_path: str):
+        SystemTransition._base_log_path = log_path
 
     def __init__(self, transitions: List[Transition]) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
@@ -66,7 +70,7 @@ class SystemTransition(object):
         cs.setFormatter(logging.Formatter('{} %(asctime)s: %(levelname)s: %(message)s'.format(self._id)))
         self._logger.addHandler(cs)
         self._file_handler.append(cs)
-        fh = logging.FileHandler(path_join(SystemTransition.base_log_path, str(self._id)))
+        fh = logging.FileHandler(path_join(SystemTransition._base_log_path, str(self._id)))
         fh.setLevel(logging.DEBUG)
         #fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(message)s'))
         fh.setFormatter(logging.Formatter('%(message)s'))
@@ -81,7 +85,7 @@ class SystemTransition(object):
             handler.close()
 
         # rename file with results
-        new_name = path_join(SystemTransition.base_log_path, 'case_{}__mark_is_{}'.format(self._id, self._mark))
+        new_name = path_join(SystemTransition._base_log_path, 'case_{}__mark_is_{}'.format(self._id, self._mark))
         rename(self._file_handler[1].baseFilename, new_name)
         self._file_handler.clear()
         self._logger = None
