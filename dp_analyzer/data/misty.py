@@ -6,13 +6,6 @@ from typing import Dict
 cipher_name = 'misty'   # type: str
 systems = dict()        # type: Dict[int, System]
 
-# systems[3] = System(
-#     inputs=[a1, a2],
-#     outputs=[c1, c2],
-#     transitions=[Transition(Side(a1), Side(b1, cp_and_use_lo(a2, mu)), F),
-#                  Transition(Side(a2), Side(c2, cp_and_use_lo(b1, lmbda)), G),
-#                  Transition(Side(b1), Side(c1, cp_and_use_lo(c2, mu)), F)]
-# )
 
 # systems[6] = System(
 #     inputs=[a1, a2, a3, a4],

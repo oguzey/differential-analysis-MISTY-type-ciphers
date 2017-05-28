@@ -33,9 +33,9 @@ class Condition(object):
         """
         if not right_side.is_empty() and state == ConditionState.IS_ZERO:
             assert "Internal error" == 0
-        self.__state = state
-        self.__left_side = left_side
-        self.__right_side = right_side
+        self.__state = state  # type: ConditionState
+        self.__left_side = left_side  # type: Side
+        self.__right_side = right_side  # type: Side
 
     def __eq__(self, other: 'Condition') -> bool:
         return self.__state == other.__state and (
@@ -94,41 +94,42 @@ class Condition(object):
             return False
         if len(self.__left_side) == 1 and len(self.__right_side) == 0 and self.__state == ConditionState.IS_ZERO:
             return False
-        #assert self.__state == ConditionState.IS_ZERO if (not self.__left_side.is_empty() and self.__right_side.is_empty()) else True
 
         self.__right_side.merge_side(self.__left_side)
         var = self.__right_side.pop_the_latest_variable()
         if var:
             self.__left_side.add_variable(var)
-            assert len(self.__right_side) == 0 or len(self.__right_side) == 1
-            var_r = self.__right_side.pop_first_variable()
-            var.move_operators(var_r)
-            self.__right_side.add_variable(var_r)
+            self.__right_side.move_lo_from_var(var)
         self.__state = ConditionState.IS_ZERO if self.__right_side.is_empty() else ConditionState.IS_EQUAL
         return True
 
     def update_with(self, condition: 'Condition') -> bool:
         if condition.__state == ConditionState.IS_NOT_ZERO:
             return True
-
-        assert len(condition.__left_side) <= 1 and len(condition.__right_side) <= 1
+        s = str(self)
+        assert len(condition.__left_side) == 1 and len(condition.__right_side) <= 2
         res = False
-        if self.__right_side.contains(condition.__left_side):
-            self.__right_side.replace_in_side(condition.__left_side, condition.__right_side)
+
+        var = condition.__left_side.get_first()
+        if self.__right_side.replace_var_by_side(var, condition.__right_side):
             res = True
-        if self.__left_side.contains(condition.__left_side):
-            self.__left_side.replace_in_side(condition.__left_side, condition.__right_side)
+        if self.__left_side.replace_var_by_side(var, condition.__right_side):
             res = True
 
         res2 = self.normalise()
+        logger.debug("update_with {}: from {} to {}".format(condition, s, str(self)))
         return res or res2
 
     @staticmethod
     def create_zero_condition(side: Side) -> 'Condition':
-        assert isinstance(side, Side) and not side.is_empty() and len(side) <= 2
+        assert isinstance(side, Side) and not side.is_empty()
+        s = str(side)
         var = side.pop_the_latest_variable()
-        # TODO: simplify condition here
-        return Condition(Side(var), side, ConditionState.IS_ZERO if side.is_empty() else ConditionState.IS_EQUAL)
+        assert var is not None
+        side.move_lo_from_var(var)
+        c = Condition(Side(var), side, ConditionState.IS_ZERO if side.is_empty() else ConditionState.IS_EQUAL)
+        logger.info("create_zero_condition: Convert condition '{} = 0' to '{}'".format(s, c))
+        return c
 
     @staticmethod
     def create_non_zero_condition(side: Side) -> 'Condition':

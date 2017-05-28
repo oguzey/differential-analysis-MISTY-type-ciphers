@@ -189,6 +189,9 @@ class SystemTransition(object):
                 new_zero_conds.append(econdition)
             if econdition.is_useless():
                 useless_econds.append(econdition)
+                logger.debug("useless: Condition {} true ".format(econdition))
+            else:
+                logger.debug("useless: Condition {} false ".format(econdition))
 
         if condition.get_state() == ConditionState.IS_EQUAL:
             self._conds_equals.append(condition)
@@ -244,6 +247,8 @@ class SystemTransition(object):
             amount_new_conditions = self._analyse_and_generate_new_conditions()
 
     def _is_side_non_zero(self, side: Side) -> bool:
+        if len(side) == 1 and side.get_first().is_zero():
+            return True
         for nzcondition in self._conds_non_zero:
             assert nzcondition.get_state() == ConditionState.IS_NOT_ZERO
             if nzcondition.get_left_side() == side:
@@ -306,12 +311,12 @@ class SystemTransition(object):
 
     def _simplify(self) -> None:
         if self._is_clone:
-            self.dump_system('Simplifying cloned system')
+            self.dump_system('Simplifying cloned system {}'.format(self._id))
             #  System was cloned from other system
             # if self._parent is not None:
             #     self._parent.dump_system('Parent was', self._logger.info)
         else:
-            self.dump_system('Simplifying new system', with_common_conds=True)
+            self.dump_system('Simplifying new system {}'.format(self._id), with_common_conds=True)
             # Apply all zero conditions and drop them as variables became zero
 
             for condition in self._common_zero_conds:

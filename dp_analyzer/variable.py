@@ -38,6 +38,9 @@ class Variable(object):
         self.__hash = Variable.__k__ * int(self.__type.value) + self.__id  # type: int
         self.__loperators = []  # type: List[Union[LOLambda, LOMu]]
 
+    def contains(self, other: 'Variable') -> bool:
+        return self.__type == other.__type and self.__id == other.__id
+
     def __eq__(self, other: 'Variable') -> bool:
         if not (self.__type == other.__type and self.__id == other.__id):
             return False
@@ -58,7 +61,10 @@ class Variable(object):
         return self.__id > other.__id
 
     def __str__(self) -> str:
-        res = "{}{}".format(str(self.__type), self.__id)
+        if self.__type != VariableType.ZERO:
+            res = "{}{}".format(str(self.__type), self.__id)
+        else:
+            res = str(self.__type)
         for lop in self.__loperators:
             res = "{}({})".format(lop.get_name(), res)
         return res
@@ -78,11 +84,17 @@ class Variable(object):
     def is_output(self) -> bool:
         return self.__type == VariableType.OUTPUT
 
+    def is_zero(self) -> bool:
+        return self.__type == VariableType.ZERO
+
     def has_type(self, type_var: VariableType) -> bool:
         return self.__type == type_var
 
     def get_id(self) -> int:
         return self.__id
+
+    def get_operators(self) -> List[Union[LOMu, LOLambda]]:
+        return self.__loperators
 
     def clone(self) -> 'Variable':
         x = Variable(self.__type, self.__id)

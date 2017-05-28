@@ -63,11 +63,11 @@ class Transition(object):
         condition_left = condition.get_left_side()
         condition_right = condition.get_right_side()
 
-        if self.__left.contains(condition_left):
-            self.__left.replace_in_side(condition_left, condition_right)
+        assert len(condition_left) == 1
+        var = condition_left.get_first()
 
-        if self.__right.contains(condition_left):
-            self.__right.replace_in_side(condition_left, condition_right)
+        self.__left.replace_var_by_side(var, condition_right)
+        self.__right.replace_var_by_side(var, condition_right)
 
     def has_empty_side(self) -> bool:
         return self.__left.is_empty() or self.__right.is_empty()
