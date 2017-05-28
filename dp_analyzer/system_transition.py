@@ -166,7 +166,7 @@ class SystemTransition(object):
             transition.apply_condition(condition)
 
     def _use_and_append_zero_cond(self, condition: Condition) -> None:
-        condition.normalise()
+        #condition.normalise()
         self.__apply_condition(condition)
         self.dump_system("System after apply condition {}".format(condition), with_main_conds=False)
         for nzcondition in self._conds_non_zero:
@@ -213,18 +213,17 @@ class SystemTransition(object):
             for zcondition in new_zero_conds:
                 self._use_and_append_zero_cond(zcondition)
 
-    def _remove_empty_transitions(self):
+    def _remove_empty_transitions(self) -> int:
         rm = []
-        for index in range(len(self.__transitions)):
-            if self.__transitions[index].has_both_empty_side():
-                rm.append(index)
+        for transition in self.__transitions:
+            if transition.has_both_empty_side():
+                rm.append(transition)
 
-        for index in rm:
-            self.__transitions.pop(index)
+        for transition in rm:
+            self.__transitions.remove(transition)
+        return len(rm)
 
     def _analyse_and_generate_new_conditions(self) -> int:
-        self._remove_empty_transitions()
-
         null_trans = []
 
         for transition in self.__transitions:
@@ -235,7 +234,8 @@ class SystemTransition(object):
 
         for transition in null_trans:
             self.__transitions.remove(transition)
-            self._use_and_append_zero_cond(transition.make_zero_condition())
+            if not transition.has_both_empty_side():
+                self._use_and_append_zero_cond(transition.make_zero_condition())
 
         return len(null_trans)
 
@@ -244,6 +244,8 @@ class SystemTransition(object):
         while amount_new_conditions > 0:
             for condition in self._conds_equals:
                 self.__apply_condition(condition)
+
+            self._remove_empty_transitions()
             amount_new_conditions = self._analyse_and_generate_new_conditions()
 
     def _is_side_non_zero(self, side: Side) -> bool:
@@ -290,8 +292,8 @@ class SystemTransition(object):
         logger.info("Start with system {}".format(self._id))
 
         # For debugging
-        # if self._id == 5:
-        #     logger.info("start debuging")
+        if self._id == 8:
+            logger.info("start debuging")
 
         try:
             self._simplify()
@@ -336,82 +338,94 @@ class SystemTransition(object):
         self.dump_system('start estimation')
         # logger.debug("This call of function is %s FORK" % ("" if call_as_fork else "NOT"))
 
-        for x in range(len(self.__transitions) - 1, -1, -1):
-            created_new_conditions = False
+        # set to start
+        some_transitions_removed = True
+        while some_transitions_removed:
+            logger.debug("Start analyse from last transition")
+            some_transitions_removed = False
+            for x in range(len(self.__transitions) - 1, -1, -1):
+                created_new_conditions = False
 
-            transition = self.__transitions[x]
-            logger.debug("Analyse transition {}".format(transition))
-            left = transition.get_left_side()
-            right = transition.get_right_side()
-            # TODO: DO NOT INCLUDE ESTIMATION FOR THAT TRANSITION
-            assert len(left) > 0 and len(right) > 0
+                transition = self.__transitions[x]
+                logger.debug("Analyse transition {}".format(transition))
+                left = transition.get_left_side()
+                right = transition.get_right_side()
+                # TODO: DO NOT INCLUDE ESTIMATION FOR THAT TRANSITION
+                assert len(left) > 0 and len(right) > 0
 
-            # 2 sides does not have unknowns
-            if not left.contains_unknown() and not right.contains_unknown():
-                count_triviality += 1
-                logger.debug("Transition {} is triviality".format(transition))
-                continue
+                # 2 sides does not have unknowns
+                if not left.contains_unknown() and not right.contains_unknown():
+                    count_triviality += 1
+                    logger.debug("Transition {} is triviality".format(transition))
+                    continue
 
-            is_left_non_zero = self._is_side_non_zero(left)
-            is_right_non_zero = self._is_side_non_zero(right)
+                is_left_non_zero = self._is_side_non_zero(left)
+                is_right_non_zero = self._is_side_non_zero(right)
 
-            if is_left_non_zero and is_right_non_zero:
-                logger.debug("Both sides '{}' and '{}' are not zero".format(left, right))
-                # do nothing, just increase counter
-                count_with_unknowns += 1
-                continue
-            elif is_left_non_zero and not is_right_non_zero:
-                logger.debug("Left side '{}' is NON ZERO. Rigth is undefined '{}'".format(left, right))
-                # fixed left side - not fork
-                created_new_conditions = True
-                nz = Condition.create_non_zero_condition(right.copy())
-                logger.debug("Create non zero condition '{}'".format(nz))
-                self._conds_non_zero.append(nz)
-                count_with_unknowns += 1
-                continue
-            elif not is_left_non_zero and is_right_non_zero:
-                logger.debug("Right side '{}' is NON ZERO. Left is undefined '{}'".format(right, left))
-                # fixed right side - not fork
-                created_new_conditions = True
-                nz = Condition.create_non_zero_condition(left.copy())
-                logger.debug("Create non zero condition: '{}'".format(nz))
-                self._conds_non_zero.append(nz)
-                count_with_unknowns += 1
-                continue
-            else:
-                fork = False
-                # both sides not zero
-                # check that they does not contain unkwowns
-                if not left.contains_unknown() or not right.contains_unknown():
-                    logger.info('Left or right sides does not contains UNKNOWN')
-                    # need divide in two cases: zero and not zero
-                    # zero case
+                if is_left_non_zero and is_right_non_zero:
+                    logger.debug("Both sides '{}' and '{}' are not zero".format(left, right))
+                    # do nothing, just increase counter
+                    count_with_unknowns += 1
+                    continue
+                elif is_left_non_zero and not is_right_non_zero:
+                    logger.debug("Left side '{}' is NON ZERO. Rigth is undefined '{}'".format(left, right))
+                    # fixed left side - not fork
+                    created_new_conditions = True
+                    nz = Condition.create_non_zero_condition(right.copy())
+                    logger.debug("Create non zero condition '{}'".format(nz))
+                    self._conds_non_zero.append(nz)
+                    count_with_unknowns += 1
+                    continue
+                elif not is_left_non_zero and is_right_non_zero:
+                    logger.debug("Right side '{}' is NON ZERO. Left is undefined '{}'".format(right, left))
+                    # fixed right side - not fork
+                    created_new_conditions = True
+                    nz = Condition.create_non_zero_condition(left.copy())
+                    logger.debug("Create non zero condition: '{}'".format(nz))
+                    self._conds_non_zero.append(nz)
+                    count_with_unknowns += 1
+                    continue
                 else:
-                    logger.info(
-                        "Left and right contains UNKNOWN and sides in undefined. 'Fork' will processing")
-                    fork = True
+                    fork = False
+                    # both sides not zero
+                    # check that they does not contain unkwowns
+                    if not left.contains_unknown() or not right.contains_unknown():
+                        logger.info('Left or right sides does not contains UNKNOWN')
+                        # need divide in two cases: zero and not zero
+                        # zero case
+                    else:
+                        logger.info(
+                            "Left and right contains UNKNOWN and sides in undefined. 'Fork' will processing")
+                        fork = True
 
-                created_new_conditions = True
+                    created_new_conditions = True
 
-                new_system = self.__clone(set_parent=fork)
-                # create non zero condition and add them to new system
-                #logger.debug("Creating new conditions for non zero case")
-                left_nzc = Condition.create_non_zero_condition(left.copy())
-                right_nzc = Condition.create_non_zero_condition(right.copy())
-                logger.debug("New non zero conditions '{}' and '{}'".format(left_nzc, right_nzc))
-                new_system._conds_non_zero.append(left_nzc)
-                new_system._conds_non_zero.append(right_nzc)
-                append_system_fn(new_system)
-                logger.debug("New system with id {} added to queue".format(new_system._id))
+                    new_system = self.__clone(set_parent=fork)
+                    # create non zero condition and add them to new system
+                    #logger.debug("Creating new conditions for non zero case")
+                    left_nzc = Condition.create_non_zero_condition(left.copy())
+                    right_nzc = Condition.create_non_zero_condition(right.copy())
+                    logger.debug("New non zero conditions '{}' and '{}'".format(left_nzc, right_nzc))
+                    new_system._conds_non_zero.append(left_nzc)
+                    new_system._conds_non_zero.append(right_nzc)
+                    append_system_fn(new_system)
+                    logger.debug("New system with id {} added to queue".format(new_system._id))
 
-                #logger.debug("Creating new conditions for zero case")
-                left_zc = Condition.create_zero_condition(left.copy())
-                right_zc = Condition.create_zero_condition(right.copy())
-                logger.debug("New zero conditions '{}' and '{}'".format(left_zc, right_zc))
-                self._use_and_append_zero_cond(left_zc)
-                self._use_and_append_zero_cond(right_zc)
-                self._remove_empty_transitions()
-                continue
+                    #logger.debug("Creating new conditions for zero case")
+                    left_zc = Condition.create_zero_condition(left.copy())
+                    right_zc = Condition.create_zero_condition(right.copy())
+                    logger.debug("New zero conditions '{}' and '{}'".format(left_zc, right_zc))
+                    self._use_and_append_zero_cond(left_zc)
+                    self._use_and_append_zero_cond(right_zc)
+                    some_transitions_removed = False
+                    res = 1
+                    while res > 0:
+                        res = self._remove_empty_transitions()
+                        res += self._analyse_and_generate_new_conditions()
+                        some_transitions_removed |= bool(res)
+                    if some_transitions_removed:
+                        break
+                    continue
 
         # TODO: Estimate system at the end function
         # TODO: add correct mark
