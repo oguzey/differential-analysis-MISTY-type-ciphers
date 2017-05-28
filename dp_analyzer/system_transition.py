@@ -40,7 +40,7 @@ class SystemTransition(object):
         It is link to other object of SystemTransition which is gave birth this system.
         It is using to collect results.
         """
-        self._parent = None  # type: SystemTransition
+        self._parent = -1  # type: int
         self._type = None  # type: SystemTransitionType
         self._id = SystemTransition.__id.increment()  # type: int
         self._logger = None  # type: logging.Logger
@@ -156,7 +156,7 @@ class SystemTransition(object):
         new_system._conds_equals = [cond.copy() for cond in self._conds_equals]
 
         if set_parent:
-            new_system._parent = self
+            new_system._parent = self._id
             self._type = SystemTransitionType.INTERMEDIATE
         return new_system
 
@@ -308,8 +308,8 @@ class SystemTransition(object):
         if self._is_clone:
             self.dump_system('Simplifying cloned system')
             #  System was cloned from other system
-            if self._parent is not None:
-                self._parent.dump_system('Parent was', self._logger.info)
+            # if self._parent is not None:
+            #     self._parent.dump_system('Parent was', self._logger.info)
         else:
             self.dump_system('Simplifying new system', with_common_conds=True)
             # Apply all zero conditions and drop them as variables became zero

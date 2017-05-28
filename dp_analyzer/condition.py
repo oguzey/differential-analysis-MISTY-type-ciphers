@@ -94,7 +94,7 @@ class Condition(object):
             return False
         if len(self.__left_side) == 1 and len(self.__right_side) == 0 and self.__state == ConditionState.IS_ZERO:
             return False
-        assert self.__state == ConditionState.IS_ZERO if (not self.__left_side.is_empty() and self.__right_side.is_empty()) else True
+        #assert self.__state == ConditionState.IS_ZERO if (not self.__left_side.is_empty() and self.__right_side.is_empty()) else True
 
         self.__right_side.merge_side(self.__left_side)
         var = self.__right_side.pop_the_latest_variable()
