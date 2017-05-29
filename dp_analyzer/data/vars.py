@@ -7,7 +7,7 @@ from typing import Union
 System = namedtuple('System', ['transitions', 'inputs', 'outputs'])
 
 
-def cp_and_use_lo(var: Variable, op: Union[LOLambda, LOMu], op2: Union[LOLambda, LOMu]=None):
+def cp_with_lo(var: Variable, op: Union[LOLambda, LOMu], op2: Union[LOLambda, LOMu]=None):
     tmp = var.clone()
     tmp.apply_lin_oper(op.clone())
     if op2 is not None:
