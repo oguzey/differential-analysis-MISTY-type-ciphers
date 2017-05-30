@@ -9,6 +9,7 @@ import multiprocessing as mp
 from os.path import join as path_join
 from os import getcwd, makedirs
 from data.vars import System
+from collector import collector, Node
 
 
 def zero_conds_to_str(zero_conds: List[Condition]) -> str:
@@ -60,6 +61,7 @@ def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
                                                                 non_zero_conds_to_str(out_non_zero_conds)))
             system = SystemTransition([tr.copy() for tr in transitions])
             system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
+            system.set_node(collector.create_root_node())
             input_tasks.put(system)
 
     logger.info("Total {} system was generated with basic common conditions".format(input_tasks.qsize()))
@@ -108,3 +110,8 @@ if __name__ == "__main__":
         SystemTransition.set_base_log_path(system_log_path)
         system = systems[amount_rounds]
         main(system.transitions, system.inputs, system.outputs, amount_workers=1)
+        marks = collector.collect()
+        with open(path_join(system_log_path, "marks.txt"), "w") as f_mark:
+            f_mark.write("Marks: \n")
+            for mark in marks:
+                f_mark.write("\t{}\n".format(mark))

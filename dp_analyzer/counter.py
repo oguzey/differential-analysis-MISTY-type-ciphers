@@ -14,3 +14,7 @@ class Counter(object):
     def value(self):
         with self.lock:
             return self.val.value
+
+    def reset(self):
+        with self.lock:
+            self.val.value = 0

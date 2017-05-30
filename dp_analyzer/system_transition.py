@@ -11,6 +11,7 @@ from os import rename, getcwd
 import sys
 from sympy import Symbol
 import inspect
+from collector import collector, Node, NodeType
 
 
 class SystemTransitionType(Enum):
@@ -57,11 +58,18 @@ class SystemTransition(object):
         self._conds_non_zero = []  # type: List[Condition]
         self._conds_equals = []  # type: List[Condition]
 
+        # collecting marks
+        self._node = None   # type: Node
+
     def __str__(self) -> str:
         system = ""  # type: str
         for ind in range(len(self.__transitions)):
             system += "%d) %s\n" % (ind + 1, str(self.__transitions[ind]))
         return system
+
+    def set_node(self, node: Node):
+        assert node is not None and isinstance(node, Node)
+        self._node = node
 
     def open_log_file(self):
         self._logger = logging.getLogger("system_transition.new_object")
@@ -144,9 +152,10 @@ class SystemTransition(object):
             log_fn('Common non zero conditions: {}'.format("; ".join(map(str, self._common_non_zero_conds))))
         log_fn('{0}{0}'.format('-' * 40))
 
-    def __clone(self, set_parent: bool=False) -> 'SystemTransition':
+    def __clone(self, is_fork: bool=False) -> 'SystemTransition':
+
         new_system = SystemTransition([tr.copy() for tr in self.__transitions])
-        self._is_clone = True
+        new_system._is_clone = True
 
         new_system._common_zero_conds = self._common_zero_conds
         new_system._common_non_zero_conds = self._common_non_zero_conds
@@ -155,7 +164,13 @@ class SystemTransition(object):
         new_system._conds_non_zero = [cond.copy() for cond in self._conds_non_zero]
         new_system._conds_equals = [cond.copy() for cond in self._conds_equals]
 
-        if set_parent:
+        collector.add_parent(self._node, NodeType.FORK if is_fork else NodeType.BRANCH)
+        node_child1, node_child2 = collector.create_children(self._node)
+
+        self._node = node_child1
+        new_system._node = node_child2
+
+        if is_fork:
             new_system._parent = self._id
             self._type = SystemTransitionType.INTERMEDIATE
         return new_system
@@ -400,7 +415,7 @@ class SystemTransition(object):
 
                     created_new_conditions = True
 
-                    new_system = self.__clone(set_parent=fork)
+                    new_system = self.__clone(is_fork=fork)
                     # create non zero condition and add them to new system
                     #logger.debug("Creating new conditions for non zero case")
                     left_nzc = Condition.create_non_zero_condition(left.copy())
@@ -439,52 +454,8 @@ class SystemTransition(object):
         # self._mark = ("p^%d" % expo, pow(0.5, expo))
         self._type = SystemTransitionType.LAST if self._type is None else self._type
         self._is_estimated = True
+        if self._mark is not None:
+            collector.add_leaf(self._node, self._mark)
 
         self.dump_system('Estimated with mark {}'.format(str(self._mark)))
         return
-
-
-    #  Maybe these functions will be needed
-
-        # def __apply_custom_conditions(self, custom_conditions: CustomConditions) -> None:
-        #     for index in range(len(custom_conditions) - 1, -1, -1):
-        #         condition = custom_conditions.get_condition(index)
-        #         self.__apply_condition(condition)
-
-    # def __do_fast_estimation(self, custom_cond: CustomConditions, common_cond_nz: List[Condition]) -> bool:
-    #     nz_sides = [cond.get_left_side() for cond in common_cond_nz]
-    #
-    #     count_simple = 0
-    #     for trans in self.__transitions:
-    #         tr_left = trans.get_left_side()
-    #         tr_right = trans.get_right_side()
-    #
-    #         if tr_left in nz_sides and tr_right not in nz_sides:
-    #             custom_cond.append_condition(
-    #                 Condition.create_non_zero_condition(tr_right.copy()))
-    #             nz_sides.append(tr_right)
-    #             if tr_right.has_only_one_unknown():
-    #                 trans.make_simple()
-    #                 count_simple += 1
-    #         elif tr_left not in nz_sides and tr_right in nz_sides:
-    #             custom_cond.append_condition(
-    #                 Condition.create_non_zero_condition(tr_left.copy()))
-    #             nz_sides.append(tr_left)
-    #             if tr_left.has_only_one_unknown():
-    #                 trans.make_simple()
-    #                 count_simple += 1
-    #
-    #         if not tr_left.contains_unknown() and (
-    #                 not tr_right.contains_unknown()):
-    #             trans.make_simple()
-    #             count_simple += 1
-    #
-    #     return count_simple == len(self.__transitions)
-
-    # def __count_unknown_vars(self) -> int:
-    #     unknowns = []
-    #     for trans in self.__transitions:
-    #         unknowns.extend(trans.get_left_side().get_unknowns_id())
-    #         unknowns.extend(trans.get_right_side().get_unknowns_id())
-    #     s = set(unknowns)
-    #     return len(s)
