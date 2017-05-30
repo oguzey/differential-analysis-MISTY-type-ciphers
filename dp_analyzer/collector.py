@@ -192,15 +192,4 @@ class Collector(object):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 collector = Collector()

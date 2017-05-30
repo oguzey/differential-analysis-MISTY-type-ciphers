@@ -125,10 +125,11 @@ class Condition(object):
         assert isinstance(side, Side) and not side.is_empty()
         s = str(side)
         var = side.pop_the_latest_variable()
+        s_var = str(var)
         assert var is not None
         side.move_lo_from_var(var)
         c = Condition(Side(var), side, ConditionState.IS_ZERO if side.is_empty() else ConditionState.IS_EQUAL)
-        logger.info("create_zero_condition: Convert condition '{} = 0' to '{}'".format(s, c))
+        logger.info("create_zero_condition: var: {}; side: {}. => '{}'".format(s_var, s, c))
         return c
 
     @staticmethod

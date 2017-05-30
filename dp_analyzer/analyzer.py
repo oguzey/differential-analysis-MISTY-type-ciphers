@@ -102,7 +102,7 @@ if __name__ == "__main__":
     makedirs(root_log_path, exist_ok=True)
     SystemTransition.set_base_log_path(root_log_path)
 
-    from data.misty import systems, cipher_name
+    from data.misty2 import systems, cipher_name
 
     for amount_rounds in sorted(list(systems.keys())):
         system_log_path = path_join(root_log_path, str(cipher_name), '{}_rounds'.format(amount_rounds))

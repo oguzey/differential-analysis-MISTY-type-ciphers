@@ -104,7 +104,16 @@ class Variable(object):
 
     def apply_lin_oper(self, lin_op: Union[LOMu, LOLambda]):
         assert lin_op is not None
+        if len(self.__loperators) > 0:
+            top_lo = self.__loperators[-1]
+            if type(top_lo) == type(lin_op) and top_lo.is_inverse() == (not lin_op.is_inverse()):
+                self.__loperators.pop(-1)
+                return
+
         self.__loperators.append(lin_op)
+
+    def can_be_removed(self) -> bool:
+        return self.is_zero() and len(self.__loperators) == 0
 
     def move_operators(self, other: Optional['Variable']) -> 'Variable':
         while len(self.__loperators):

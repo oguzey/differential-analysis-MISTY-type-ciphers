@@ -76,7 +76,7 @@ class SystemTransition(object):
         cs = logging.StreamHandler(sys.stdout)
         cs.setLevel(logging.DEBUG)
         cs.setFormatter(logging.Formatter('{} %(asctime)s: %(levelname)s: %(message)s'.format(self._id)))
-        self._logger.addHandler(cs)
+        #self._logger.addHandler(cs)
         self._file_handler.append(cs)
         fh = logging.FileHandler(path_join(SystemTransition._base_log_path, str(self._id)))
         fh.setLevel(logging.DEBUG)

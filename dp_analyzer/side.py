@@ -153,6 +153,9 @@ class Side(object):
             return
         if self.contains_element(variable):
             self.pop_variable(variable)
+        elif variable.can_be_removed():
+            logger.info("side: add_variable: removed var {}".format(variable))
+            return
         else:
             self.__vars.append(variable)
 
@@ -188,8 +191,14 @@ class Side(object):
     def apply_loperator(self, lo: Union[LOLambda, LOMu]):
         if len(self.__vars) == 0 and isinstance(lo, LOLambda) and lo.is_inverse():
             self.__vars.append(Variable(VariableType.ZERO))
+        rm = []
         for var in self.__vars:
             var.apply_lin_oper(lo)
+            if var.can_be_removed():
+                logger.info("side: apply_loperator: removed var {}".format(var))
+                rm.append(var)
+        for v in rm:
+            self.__vars.remove(v)
 
     def move_lo_from_var(self, var: Variable):
         opers = var.get_operators()  # type: List[Union[LOLambda, LOMu]]
