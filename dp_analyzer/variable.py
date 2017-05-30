@@ -115,6 +115,12 @@ class Variable(object):
     def can_be_removed(self) -> bool:
         return self.is_zero() and len(self.__loperators) == 0
 
+    def contains_inverse_lo_lambda(self) -> bool:
+        for lo in self.__loperators:
+            if isinstance(lo, LOLambda) and lo.is_inverse():
+                return True
+        return False
+
     def move_operators(self, other: Optional['Variable']) -> 'Variable':
         while len(self.__loperators):
             l = self.__loperators.pop(0)

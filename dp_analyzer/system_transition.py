@@ -450,6 +450,13 @@ class SystemTransition(object):
                 self._mark = Symbol(tr.get_probability())
             else:
                 self._mark *= Symbol(tr.get_probability())
+
+        N = Symbol('N')
+        for i in range(self._count_special_equal_conds()):
+            if self._mark is None:
+                self._mark = N
+            else:
+                self._mark *= N
         # expo = count_triviality + count_with_unknowns - self.__count_unknown_vars()
         # self._mark = ("p^%d" % expo, pow(0.5, expo))
         self._type = SystemTransitionType.LAST if self._type is None else self._type
@@ -459,3 +466,18 @@ class SystemTransition(object):
 
         self.dump_system('Estimated with mark {}'.format(str(self._mark)))
         return
+
+    def _count_special_equal_conds(self) -> int:
+        amount = 0
+        for econdition in self._conds_equals:
+            left = econdition.get_left_side()
+            assert len(left) == 1
+            left_var = left.get_first()
+            if left_var.is_unknown():
+                right = econdition.get_right_side()
+                assert len(right) == 1
+                right_var = right.get_first()
+                if right_var.contains_inverse_lo_lambda():
+                    logger.info("_count_special_equal_conds: Found special condition with unknown: {}".format(econdition))
+                    amount += 1
+        return amount

@@ -201,6 +201,7 @@ class Side(object):
             self.__vars.remove(v)
 
     def move_lo_from_var(self, var: Variable):
+        assert len(self.__vars) <= 1
         opers = var.get_operators()  # type: List[Union[LOLambda, LOMu]]
         while len(opers) > 0:
             lo = opers.pop(-1)
