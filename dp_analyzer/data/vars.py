@@ -4,7 +4,15 @@ from transition import BlockFunction
 from collections import namedtuple
 from typing import Union
 
-System = namedtuple('System', ['transitions', 'inputs', 'outputs'])
+#System = namedtuple('System', ['transitions', 'inputs', 'outputs'])
+
+
+class System(object):
+    def __init__(self, transitions, inputs, outputs, condition_func=None):
+        self.transitions = transitions
+        self.inputs = inputs
+        self.outputs = outputs
+        self.output_condition_func = condition_func
 
 
 def cp_with_lo(var: Variable, op: Union[LOLambda, LOMu], op2: Union[LOLambda, LOMu]=None):

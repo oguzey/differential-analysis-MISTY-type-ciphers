@@ -2,7 +2,7 @@
 
 from logger import logger
 from system_transition import SystemTransition
-from condition import Condition
+from condition import Condition, ConditionState
 from common_condition_generator import CommonConditionGenerator
 from typing import List
 import multiprocessing as mp
@@ -37,15 +37,26 @@ def worker(system, input_tasks, done_tasks):
     done_tasks.put(system)
     input_tasks.put('no-task')
 
+def add_base_system_to_queue(queue, transitions, in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds):
+    logger.info('-' * 50)
+    logger.info("Input condition: \n\t{}\n\t{}".format(zero_conds_to_str(in_zero_conds),
+                                                       non_zero_conds_to_str(in_non_zero_conds)))
+    logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),
+                                                        non_zero_conds_to_str(out_non_zero_conds)))
 
-def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
+    system = SystemTransition([tr.copy() for tr in transitions])
+    system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
+    system.set_node(collector.create_root_node())
+    queue.put(system)
+
+
+def main(transitions, inputs, outputs, cond_func, amount_workers=mp.cpu_count()):
     logger.info("Basic transitions are: \n{}\n\n".format('\n'.join(map(str, transitions))))
 
     logger.info("Creating common conditions...")
     ccond_generator = CommonConditionGenerator()
     input_conditions = ccond_generator.gen_all_common_conditions(inputs)
     output_conditions = ccond_generator.gen_all_common_conditions(outputs)
-
 
     logger.info("Generating systems...")
     mp_manager = mp.Manager()
@@ -54,15 +65,24 @@ def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
     logger.info("Created input_tasks = {}, done_tasks = {}".format(input_tasks, done_tasks))
     for in_zero_conds, in_non_zero_conds in input_conditions:
         for out_zero_conds, out_non_zero_conds in output_conditions:
-            logger.info('-' * 50)
-            logger.info("Input condition: \n\t{}\n\t{}".format(zero_conds_to_str(in_zero_conds),
-                                                               non_zero_conds_to_str(in_non_zero_conds)))
-            logger.info("Output condition: \n\t{}\n\t{}".format(zero_conds_to_str(out_zero_conds),
-                                                                non_zero_conds_to_str(out_non_zero_conds)))
-            system = SystemTransition([tr.copy() for tr in transitions])
-            system.set_common_conditions(in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
-            system.set_node(collector.create_root_node())
-            input_tasks.put(system)
+            if cond_func is not None:
+                additional_conds = cond_func(out_zero_conds)    # type: List[Condition]
+                assert len(additional_conds) > 0
+                for add_cond in additional_conds:
+                    new_in_zero_conds = [cond.copy() for cond in in_zero_conds]
+                    new_in_non_zero_conds = [cond.copy() for cond in in_non_zero_conds]
+                    new_out_zero_conds = [cond.copy() for cond in out_zero_conds]
+                    new_out_non_zero_conds = [cond.copy() for cond in out_non_zero_conds]
+                    if add_cond.get_state() == ConditionState.IS_ZERO:
+                        new_out_zero_conds.append(add_cond)
+                    else:
+                        assert add_cond.get_state() == ConditionState.IS_NOT_ZERO
+                        new_out_non_zero_conds.append(add_cond)
+                    add_base_system_to_queue(input_tasks, transitions, new_in_zero_conds, new_in_non_zero_conds,
+                                             new_out_zero_conds, new_out_non_zero_conds)
+            else:
+
+                add_base_system_to_queue(input_tasks, transitions, in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds)
 
     logger.info("Total {} system was generated with basic common conditions".format(input_tasks.qsize()))
     logger.info("Estimating...")
@@ -88,11 +108,12 @@ def main(transitions, inputs, outputs, amount_workers=mp.cpu_count()):
                     counter += 1
                     pool.apply_async(worker, (system, input_tasks, done_tasks))
 
-    logger.info("Done total tasks - {}".format(done_tasks.qsize()))
     logger.info("Results:")
+    total_tasks = done_tasks.qsize()
     while done_tasks.qsize() > 0:
-        system = done_tasks.get_nowait()
-        logger.info("\testimate: {}".format(system.get_mark()))
+        system = done_tasks.get_nowait()    # type: SystemTransition
+        logger.info("system_id-{}: {}".format(system.get_system_id(), system.get_mark()))
+    logger.info("Done total tasks - {}".format(total_tasks))
     # logger.info("Total fails is %d" % fails)
     # logger.info("Total estimated is %d" % estimated)
 
@@ -102,14 +123,14 @@ if __name__ == "__main__":
     makedirs(root_log_path, exist_ok=True)
     SystemTransition.set_base_log_path(root_log_path)
 
-    from data.misty2 import systems, cipher_name
+    from data.skipjack import systems, cipher_name
 
     for amount_rounds in sorted(list(systems.keys())):
         system_log_path = path_join(root_log_path, str(cipher_name), '{}_rounds'.format(amount_rounds))
         makedirs(system_log_path, exist_ok=True)
         SystemTransition.set_base_log_path(system_log_path)
-        system = systems[amount_rounds]
-        main(system.transitions, system.inputs, system.outputs, amount_workers=1)
+        system = systems[amount_rounds]     # type: System
+        main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=1)
         marks = collector.collect()
         with open(path_join(system_log_path, "marks.txt"), "w") as f_mark:
             f_mark.write("Marks: \n")

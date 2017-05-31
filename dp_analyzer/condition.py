@@ -136,3 +136,9 @@ class Condition(object):
     def create_non_zero_condition(side: Side) -> 'Condition':
         assert isinstance(side, Side) and not side.is_empty()
         return Condition(side, Side(), ConditionState.IS_NOT_ZERO)
+
+    def check_contains_var(self, var: Variable, state: ConditionState):
+        assert len(self.__left_side) == 1 and self.__right_side.is_empty()
+        if self.__left_side.contains_element(var) and self.__state == state:
+            return True
+        return False

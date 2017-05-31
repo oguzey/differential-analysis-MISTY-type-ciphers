@@ -452,7 +452,9 @@ class SystemTransition(object):
                 self._mark *= Symbol(tr.get_probability())
 
         N = Symbol('N')
-        for i in range(self._count_special_equal_conds()):
+        amount = self._count_special_equal_conds()
+        logger.info("esstimate_internal: found {} spetial equal_conds for sid = {}".format(amount, self._id))
+        for i in range(amount):
             if self._mark is None:
                 self._mark = N
             else:
