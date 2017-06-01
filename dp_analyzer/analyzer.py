@@ -113,6 +113,7 @@ def main(transitions, inputs, outputs, cond_func, amount_workers=mp.cpu_count())
     total_tasks = done_tasks.qsize()
     while done_tasks.qsize() > 0:
         system = done_tasks.get_nowait()    # type: SystemTransition
+        system.handle_by_collector()
         logger.info("system-{}: {}".format(system.get_system_id(), system.get_mark()))
     logger.info("Done total tasks - {}".format(total_tasks))
     return total_tasks
@@ -123,14 +124,14 @@ if __name__ == "__main__":
     makedirs(root_log_path, exist_ok=True)
     SystemTransition.set_base_log_path(root_log_path)
 
-    from data.skipjack import systems, cipher_name
+    from data.misty import systems, cipher_name
 
     for amount_rounds in sorted(list(systems.keys())):
         system_log_path = path_join(root_log_path, str(cipher_name), '{}_rounds'.format(amount_rounds))
         makedirs(system_log_path, exist_ok=True)
         SystemTransition.set_base_log_path(system_log_path)
         system = systems[amount_rounds]     # type: System
-        total_cases = main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=1)
+        total_cases = main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=4)
         marks = collector.collect()
         with open(path_join(system_log_path, "marks.txt"), "w") as f_mark:
             f_mark.write("System: \n\n")

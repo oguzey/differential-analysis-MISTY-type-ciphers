@@ -54,7 +54,7 @@ class Collector(object):
         self._nodes_by_depth = dict()   # type: Dict[int, List[Node]]
         self._max_tree_depth = 0        # type: int
 
-    def _append_to_nodes(self, node: Node):
+    def append_to_nodes(self, node: Node):
         sid = node.get_sid()
         tree_depth = node.get_tree_depth()
 
@@ -71,7 +71,6 @@ class Collector(object):
     def create_root_node(self):
         sid = self._counter_sid.increment()
         root = Node(sid, 0, NodeType.ROOT, 1)
-        #self._append_to_nodes(root)
         logger.info("collector: root node with sid '{}' created".format(sid))
         return root
 
@@ -83,14 +82,12 @@ class Collector(object):
         logger.info("collector: children sid = [{}, {}], tree_depth = {} created".format(child1.get_sid(), child2.get_sid(), tree_depth))
         return child1, child2
 
-    def add_parent(self, parent_node: Node, node_type: NodeType) -> None:
+    def make_parent_node(self, parent_node: Node, node_type: NodeType) -> None:
         assert node_type == NodeType.FORK or node_type == NodeType.BRANCH
-
         parent_node.set_node_type(node_type)
-        self._append_to_nodes(parent_node)
         logger.info("collector: parent node 'sid = {}' added as {}".format(parent_node.get_sid(), node_type))
 
-    def add_leaf(self, leaf_node: Node, mark: Symbol):
+    def make_node_leaf(self, leaf_node: Node, mark: Symbol):
         assert mark is not None
 
         if leaf_node.get_node_type() == NodeType.ROOT:
@@ -99,7 +96,6 @@ class Collector(object):
             assert leaf_node.get_node_type() is None
             leaf_node.set_node_type(NodeType.LEAF)
         leaf_node.set_mark([mark])
-        self._append_to_nodes(leaf_node)
         logger.info("collector: leaf node '{}' added with mark '{}'".format(leaf_node.get_sid(), mark))
 
     def _reset(self) -> None:
@@ -189,7 +185,6 @@ class Collector(object):
         # remove layer
         del self._nodes_by_depth[self._max_tree_depth]
         self._max_tree_depth -= 1
-
 
 
 collector = Collector()

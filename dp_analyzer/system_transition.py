@@ -7,7 +7,6 @@ from counter import Counter
 import logging
 from os.path import join as path_join
 from os import rename, getcwd
-import sys
 from sympy import Symbol
 import inspect
 from collector import collector, Node, NodeType
@@ -42,6 +41,7 @@ class SystemTransition(object):
 
         # collecting marks
         self._node = None   # type: Node
+        self._nodes = []
 
     def __str__(self) -> str:
         system = ""  # type: str
@@ -49,9 +49,18 @@ class SystemTransition(object):
             system += "%d) %s\n" % (ind + 1, str(self.__transitions[ind]))
         return system
 
-    def set_node(self, node: Node):
+    def set_node(self, node: Node) -> None:
         assert node is not None and isinstance(node, Node)
         self._node = node
+
+    def handle_by_collector(self):
+        for node in self._nodes:
+            #logger.info("st_node: node ({}) was added with tree_depth = {} to collector".format(node.get_sid(), node.get_tree_depth()))
+            collector.append_to_nodes(node)
+
+    def save_node(self, node: Node) -> None:
+        #logger.info("st_node: node ({}) was added with tree_depth = {}".format(node.get_sid(), node.get_tree_depth()))
+        self._nodes.append(node)
 
     def open_log_file(self):
         self._logger = logging.getLogger("system_transition.new_object")
@@ -129,7 +138,8 @@ class SystemTransition(object):
         new_system._conds_non_zero = [cond.copy() for cond in self._conds_non_zero]
         new_system._conds_equals = [cond.copy() for cond in self._conds_equals]
 
-        collector.add_parent(self._node, NodeType.FORK if is_fork else NodeType.BRANCH)
+        collector.make_parent_node(self._node, NodeType.FORK if is_fork else NodeType.BRANCH)
+        self.save_node(self._node)
         node_child1, node_child2 = collector.create_children(self._node)
 
         self._node = node_child1
@@ -393,7 +403,8 @@ class SystemTransition(object):
             else:
                 self._mark *= N
         if self._mark is not None:
-            collector.add_leaf(self._node, self._mark)
+            collector.make_node_leaf(self._node, self._mark)
+            self.save_node(self._node)
 
         self.dump_system('Estimated with mark {}'.format(str(self._mark)))
         return
