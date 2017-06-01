@@ -115,6 +115,7 @@ def main(transitions, inputs, outputs, cond_func, amount_workers=mp.cpu_count())
         system = done_tasks.get_nowait()    # type: SystemTransition
         logger.info("system-{}: {}".format(system.get_system_id(), system.get_mark()))
     logger.info("Done total tasks - {}".format(total_tasks))
+    return total_tasks
 
 if __name__ == "__main__":
 
@@ -129,9 +130,19 @@ if __name__ == "__main__":
         makedirs(system_log_path, exist_ok=True)
         SystemTransition.set_base_log_path(system_log_path)
         system = systems[amount_rounds]     # type: System
-        main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=1)
+        total_cases = main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=1)
         marks = collector.collect()
         with open(path_join(system_log_path, "marks.txt"), "w") as f_mark:
-            f_mark.write("Marks: \n")
+            f_mark.write("System: \n\n")
+            f_mark.write('\n'.join(map(str, system.transitions)))
+            f_mark.write("\n\nwhere\n")
+
+            f_mark.write("[{}] - input variables\n".format(', '.join(map(str, system.inputs))))
+            f_mark.write("[{}] - output variables\n".format(', '.join(map(str, system.outputs))))
+            f_mark.write("b[N] - unknown variables (N = 0;1;2;3...)\n")
+
+            f_mark.write("\nTotal cases handled: {}\n".format(total_cases))
+
+            f_mark.write("\nMarks:\n")
             for mark in marks:
                 f_mark.write("\t{}\n".format(mark))
