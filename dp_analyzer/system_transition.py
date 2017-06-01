@@ -3,7 +3,6 @@ from condition import Condition, ConditionException, ConditionState
 from side import Side
 from logger import logger
 from typing import List, Callable, Set
-from enum import Enum
 from counter import Counter
 import logging
 from os.path import join as path_join
@@ -12,15 +11,6 @@ import sys
 from sympy import Symbol
 import inspect
 from collector import collector, Node, NodeType
-
-
-class SystemTransitionType(Enum):
-    """
-    The class contains value to mark SystemTransition as intermediate link or final link.
-    These need to collect estimation after analyzing.
-    """
-    INTERMEDIATE = 0
-    LAST = 1
 
 
 class SystemTransition(object):
@@ -34,15 +24,7 @@ class SystemTransition(object):
     def __init__(self, transitions: List[Transition]) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
         self.__transitions = transitions  # type: List[Transition]
-        self.__amount_rounds = len(self.__transitions)  # type: int
-        self._is_estimated = None  # type: bool
         self._mark = None
-        """
-        It is link to other object of SystemTransition which is gave birth this system.
-        It is using to collect results.
-        """
-        self._parent = -1  # type: int
-        self._type = None  # type: SystemTransitionType
         self._id = SystemTransition.__id.increment()  # type: int
         self._logger = None  # type: logging.Logger
         self._file_handler = []  # type: List
@@ -73,14 +55,8 @@ class SystemTransition(object):
 
     def open_log_file(self):
         self._logger = logging.getLogger("system_transition.new_object")
-        cs = logging.StreamHandler(sys.stdout)
-        cs.setLevel(logging.DEBUG)
-        cs.setFormatter(logging.Formatter('{} %(asctime)s: %(levelname)s: %(message)s'.format(self._id)))
-        #self._logger.addHandler(cs)
-        self._file_handler.append(cs)
         fh = logging.FileHandler(path_join(SystemTransition._base_log_path, str(self._id)))
         fh.setLevel(logging.DEBUG)
-        #fh.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(message)s'))
         fh.setFormatter(logging.Formatter('%(message)s'))
         self._logger.addHandler(fh)
         self._file_handler.append(fh)
@@ -91,18 +67,15 @@ class SystemTransition(object):
             self._logger.removeHandler(handler)
             handler.flush()
             handler.close()
+            # rename file with results
+            new_name = path_join(SystemTransition._base_log_path, 'case_{}__mark_is_{}'.format(self._id, self._mark))
+            rename(handler.baseFilename, new_name)
 
-        # rename file with results
-        new_name = path_join(SystemTransition._base_log_path, 'case_{}__mark_is_{}'.format(self._id, self._mark))
-        rename(self._file_handler[1].baseFilename, new_name)
         self._file_handler.clear()
         self._logger = None
 
     def get_system_id(self):
         return self._id
-
-    def get_parent(self):
-        return self._parent
 
     def get_amount_rounds(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
@@ -110,14 +83,6 @@ class SystemTransition(object):
 
     def get_mark(self):
         return self._mark
-
-    def is_intermediate(self) -> bool:
-        assert self._type in [SystemTransitionType.INTERMEDIATE, SystemTransitionType.LAST]
-        return self._type == SystemTransitionType.INTERMEDIATE
-
-    def is_last(self) -> bool:
-        assert self._type in [SystemTransitionType.INTERMEDIATE, SystemTransitionType.LAST]
-        return self._type == SystemTransitionType.LAST
 
     def set_common_conditions(self, in_zero_cond: List[Condition], in_non_zero_cond: List[Condition],
                               out_zero_cond: List[Condition], out_non_zero_cond: List[Condition]) -> None:
@@ -170,9 +135,6 @@ class SystemTransition(object):
         self._node = node_child1
         new_system._node = node_child2
 
-        if is_fork:
-            new_system._parent = self._id
-            self._type = SystemTransitionType.INTERMEDIATE
         return new_system
 
     def __apply_condition(self, condition: Condition) -> None:
@@ -293,16 +255,6 @@ class SystemTransition(object):
                 else:
                     self._conds_non_zero.append(Condition.create_non_zero_condition(left.copy()))
 
-    def __set_fail_state(self) -> None:
-        """
-        Set fail state during estimation
-        :return: None
-        """
-        assert self._type is None or self._type == SystemTransitionType.INTERMEDIATE, "Type is {}".format(self._type)
-        self._type = SystemTransitionType.LAST if self._type is None else self._type
-        self._is_estimated = False
-        self._mark = None
-
     def estimate(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
         logger.info("Start with system {}".format(self._id))
 
@@ -313,16 +265,10 @@ class SystemTransition(object):
         try:
             self._simplify()
             self._estimate_internal(append_system_fn)
-
-                # logger.info("System could not be simplified")
-                # self.dump_system("System could not be simplified")
-                # self.__set_fail_state()
-                # return
         except ConditionException as ce:
             logger.info("System has contradiction conditions: {}".format(ce))
             self.dump_system('Meet with contradiction: {}'.format(ce))
-            self.__set_fail_state()
-
+            self._mark = None
         finally:
             logger.info("Done with system {}".format(self._id))
 
@@ -348,24 +294,18 @@ class SystemTransition(object):
     def _estimate_internal(self, append_system_fn: Callable[['SystemTransition'], None]) -> None:
         count_triviality = 0
         count_with_unknowns = 0
-        # little optimization for check contradiction
-        created_new_conditions = True  # type: bool
         self.dump_system('start estimation')
-        # logger.debug("This call of function is %s FORK" % ("" if call_as_fork else "NOT"))
 
-        # set to start
         some_transitions_removed = True
         while some_transitions_removed:
             logger.debug("Start analyse from last transition")
             some_transitions_removed = False
             for x in range(len(self.__transitions) - 1, -1, -1):
-                created_new_conditions = False
-
                 transition = self.__transitions[x]
                 logger.debug("Analyse transition {}".format(transition))
                 left = transition.get_left_side()
                 right = transition.get_right_side()
-                # TODO: DO NOT INCLUDE ESTIMATION FOR THAT TRANSITION
+
                 assert len(left) > 0 and len(right) > 0
 
                 # 2 sides does not have unknowns
@@ -385,7 +325,6 @@ class SystemTransition(object):
                 elif is_left_non_zero and not is_right_non_zero:
                     logger.debug("Left side '{}' is NON ZERO. Rigth is undefined '{}'".format(left, right))
                     # fixed left side - not fork
-                    created_new_conditions = True
                     nz = Condition.create_non_zero_condition(right.copy())
                     logger.debug("Create non zero condition '{}'".format(nz))
                     self._conds_non_zero.append(nz)
@@ -394,7 +333,6 @@ class SystemTransition(object):
                 elif not is_left_non_zero and is_right_non_zero:
                     logger.debug("Right side '{}' is NON ZERO. Left is undefined '{}'".format(right, left))
                     # fixed right side - not fork
-                    created_new_conditions = True
                     nz = Condition.create_non_zero_condition(left.copy())
                     logger.debug("Create non zero condition: '{}'".format(nz))
                     self._conds_non_zero.append(nz)
@@ -413,11 +351,9 @@ class SystemTransition(object):
                             "Left and right contains UNKNOWN and sides in undefined. 'Fork' will processing")
                         fork = True
 
-                    created_new_conditions = True
-
                     new_system = self.__clone(is_fork=fork)
                     # create non zero condition and add them to new system
-                    #logger.debug("Creating new conditions for non zero case")
+                    # logger.debug("Creating new conditions for non zero case")
                     left_nzc = Condition.create_non_zero_condition(left.copy())
                     right_nzc = Condition.create_non_zero_condition(right.copy())
                     logger.debug("New non zero conditions '{}' and '{}'".format(left_nzc, right_nzc))
@@ -426,7 +362,7 @@ class SystemTransition(object):
                     append_system_fn(new_system)
                     logger.debug("New system with id {} added to queue".format(new_system._id))
 
-                    #logger.debug("Creating new conditions for zero case")
+                    # logger.debug("Creating new conditions for zero case")
                     left_zc = Condition.create_zero_condition(left.copy())
                     right_zc = Condition.create_zero_condition(right.copy())
                     logger.debug("New zero conditions '{}' and '{}'".format(left_zc, right_zc))
@@ -442,8 +378,6 @@ class SystemTransition(object):
                         break
                     continue
 
-        # TODO: Estimate system at the end function
-        # TODO: add correct mark
         self._mark = None
         for tr in self.__transitions:
             if self._mark is None:
@@ -453,16 +387,11 @@ class SystemTransition(object):
 
         N = Symbol('N')
         amount = self._count_special_equal_conds()
-        logger.info("esstimate_internal: found {} spetial equal_conds for sid = {}".format(amount, self._id))
         for i in range(amount):
             if self._mark is None:
                 self._mark = N
             else:
                 self._mark *= N
-        # expo = count_triviality + count_with_unknowns - self.__count_unknown_vars()
-        # self._mark = ("p^%d" % expo, pow(0.5, expo))
-        self._type = SystemTransitionType.LAST if self._type is None else self._type
-        self._is_estimated = True
         if self._mark is not None:
             collector.add_leaf(self._node, self._mark)
 
@@ -482,4 +411,5 @@ class SystemTransition(object):
                 if right_var.contains_inverse_lo_lambda():
                     logger.info("_count_special_equal_conds: Found special condition with unknown: {}".format(econdition))
                     amount += 1
+        logger.info("_count_special_equal_conds: found {} special equal_conds for sid = {}".format(amount, self._id))
         return amount

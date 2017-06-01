@@ -37,6 +37,7 @@ def worker(system, input_tasks, done_tasks):
     done_tasks.put(system)
     input_tasks.put('no-task')
 
+
 def add_base_system_to_queue(queue, transitions, in_zero_conds, in_non_zero_conds, out_zero_conds, out_non_zero_conds):
     logger.info('-' * 50)
     logger.info("Input condition: \n\t{}\n\t{}".format(zero_conds_to_str(in_zero_conds),
@@ -112,10 +113,8 @@ def main(transitions, inputs, outputs, cond_func, amount_workers=mp.cpu_count())
     total_tasks = done_tasks.qsize()
     while done_tasks.qsize() > 0:
         system = done_tasks.get_nowait()    # type: SystemTransition
-        logger.info("system_id-{}: {}".format(system.get_system_id(), system.get_mark()))
+        logger.info("system-{}: {}".format(system.get_system_id(), system.get_mark()))
     logger.info("Done total tasks - {}".format(total_tasks))
-    # logger.info("Total fails is %d" % fails)
-    # logger.info("Total estimated is %d" % estimated)
 
 if __name__ == "__main__":
 
