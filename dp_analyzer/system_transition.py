@@ -10,12 +10,13 @@ from os import rename, getcwd
 import sys
 from sympy import Symbol
 import inspect
-from collector import collector, Node, NodeType
+from collector import Node, NodeType, Collector
 
 
 class SystemTransition(object):
     __id = Counter()
     _base_log_path = path_join(getcwd(), "logs")  # type: str
+    collector = None    # type: Collector
 
     @staticmethod
     def set_base_log_path(log_path: str):
@@ -129,8 +130,8 @@ class SystemTransition(object):
         new_system._conds_non_zero = [cond.copy() for cond in self._conds_non_zero]
         new_system._conds_equals = [cond.copy() for cond in self._conds_equals]
 
-        collector.add_parent(self._node, NodeType.FORK if is_fork else NodeType.BRANCH)
-        node_child1, node_child2 = collector.create_children(self._node)
+        self.collector.add_parent(self._node, NodeType.FORK if is_fork else NodeType.BRANCH)
+        node_child1, node_child2 = self.collector.create_children(self._node)
 
         self._node = node_child1
         new_system._node = node_child2
@@ -393,7 +394,7 @@ class SystemTransition(object):
             else:
                 self._mark *= N
         if self._mark is not None:
-            collector.add_leaf(self._node, self._mark)
+            self.collector.add_leaf(self._node, self._mark)
 
         self.dump_system('Estimated with mark {}'.format(str(self._mark)))
         return

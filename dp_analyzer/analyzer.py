@@ -9,7 +9,7 @@ import multiprocessing as mp
 from os.path import join as path_join
 from os import getcwd, makedirs
 from data.vars import System
-from collector import collector, Node
+from collector import Node, Collector
 
 
 def zero_conds_to_str(zero_conds: List[Condition]) -> str:
@@ -118,6 +118,13 @@ def main(transitions, inputs, outputs, cond_func, amount_workers=mp.cpu_count())
 
 if __name__ == "__main__":
 
+    amount_workers = 4
+    if amount_workers == 1:
+        collector = Collector(dict(), dict(), 0, None)
+    else:
+        collector = Collector(mp.Manager().dict(), mp.Manager().dict(), mp.Manager().Value('i', 0), mp.Lock())
+
+    SystemTransition.collector = collector
     root_log_path = path_join(getcwd(), "logs")
     makedirs(root_log_path, exist_ok=True)
     SystemTransition.set_base_log_path(root_log_path)
@@ -129,7 +136,7 @@ if __name__ == "__main__":
         makedirs(system_log_path, exist_ok=True)
         SystemTransition.set_base_log_path(system_log_path)
         system = systems[amount_rounds]     # type: System
-        main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=1)
+        main(system.transitions, system.inputs, system.outputs, system.output_condition_func, amount_workers=amount_workers)
         marks = collector.collect()
         with open(path_join(system_log_path, "marks.txt"), "w") as f_mark:
             f_mark.write("Marks: \n")

@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, Dict, List
 from sympy import Symbol
 from logger import logger
+from multiprocessing import Lock, Manager
 
 
 class NodeType(Enum):
@@ -48,30 +49,64 @@ class Node(object):
 
 
 class Collector(object):
-    def __init__(self):
+    def __init__(self, dict_nodes_by_sid: dict, dict_nodes_by_depth: dict, val_mtd: int, lock: Optional[Lock]):
         self._counter_sid = Counter()   # type: Counter
-        self._nodes_by_sid = dict()     # type: Dict[int, Node]
-        self._nodes_by_depth = dict()   # type: Dict[int, List[Node]]
-        self._max_tree_depth = 0        # type: int
+        self._nodes_by_sid = dict_nodes_by_sid     # type: Dict[int, Node]
+        self._nodes_by_depth = dict_nodes_by_depth   # type: Dict[int, List[Node]]
+        self._max_tree_depth = val_mtd  # type: int
+        self._lock = lock               # type: Lock
+
+    def __set_max_tree_depth(self, value):
+        if isinstance(self._max_tree_depth, int):
+            self._max_tree_depth = value
+        else:
+            self._max_tree_depth.value = value
+
+    def __get_max_tree_depth(self):
+        if isinstance(self._max_tree_depth, int):
+            return self._max_tree_depth
+        else:
+            return self._max_tree_depth.value
+
+    def __increment_max_tree_depth(self):
+        if isinstance(self._max_tree_depth, int):
+            self._max_tree_depth += 1
+        else:
+            self._max_tree_depth.value += 1
+
+    def __decrement_max_tree_depth(self):
+        if isinstance(self._max_tree_depth, int):
+            self._max_tree_depth -= 1
+        else:
+            self._max_tree_depth.value -= 1
 
     def _append_to_nodes(self, node: Node):
         sid = node.get_sid()
         tree_depth = node.get_tree_depth()
 
+        if self._lock is not None:
+            self._lock.acquire()
+
+        logger.info("_append_to_nodes: append node {} with depth {}".format(sid, tree_depth))
         assert self._nodes_by_sid.get(sid, None) is None
 
         self._nodes_by_sid[sid] = node
         if self._nodes_by_depth.get(tree_depth, None) is None:
-            self._nodes_by_depth[tree_depth] = []
+            if self._lock is not None:
+                self._nodes_by_depth[tree_depth] = Manager().list()
+            else:
+                self._nodes_by_depth[tree_depth] = []
         self._nodes_by_depth[tree_depth].append(node)
 
-        if tree_depth > self._max_tree_depth:
-            self._max_tree_depth = tree_depth
+        if tree_depth > self.__get_max_tree_depth():
+            self.__set_max_tree_depth(tree_depth)
+
+        if self._lock is not None:
+            self._lock.release()
 
     def create_root_node(self):
         sid = self._counter_sid.increment()
         root = Node(sid, 0, NodeType.ROOT, 1)
-        #self._append_to_nodes(root)
         logger.info("collector: root node with sid '{}' created".format(sid))
         return root
 
@@ -103,36 +138,39 @@ class Collector(object):
         logger.info("collector: leaf node '{}' added with mark '{}'".format(leaf_node.get_sid(), mark))
 
     def _reset(self) -> None:
-        assert len(self._nodes_by_sid) == 0
+        assert len(self._nodes_by_sid) == 0, "len(self._nodes_by_sid) = {}".format(len(self._nodes_by_sid))
         assert len(self._nodes_by_depth) == 0
-        assert self._max_tree_depth == 0
+        assert self.__get_max_tree_depth() == 0
         self._counter_sid.reset()
 
     def collect(self):
-        assert self._max_tree_depth > 0
+        assert self.__get_max_tree_depth() > 0
 
-        while self._max_tree_depth > 1:
+        while self.__get_max_tree_depth() > 1:
             self._remove_bottom_layer_tree()
 
         marks = []
-        assert self._max_tree_depth == 1
+        assert self.__get_max_tree_depth() == 1
         # no children
         nodes = self._nodes_by_depth[1]
+        logger.info("test_dict: nodes len = {}".format(len(nodes)))
         for node in nodes:
             assert node.get_node_type() in [NodeType.LEAF, NodeType.ROOT]
             node_mark = node.get_mark()
             assert node_mark is not None and len(node_mark) > 0
             marks.extend(node_mark)
+            logger.info("test_dict: sid = {} len = {}".format(node.get_sid(), len(self._nodes_by_sid)))
             del self._nodes_by_sid[node.get_sid()]
+            logger.info("test_dict: len = {}".format(len(self._nodes_by_sid)))
         del self._nodes_by_depth[1]
-        self._max_tree_depth -= 1
+        self.__decrement_max_tree_depth()
         self._reset()
         return marks
 
     def _remove_bottom_layer_tree(self):
-        assert self._max_tree_depth > 1
+        assert self.__get_max_tree_depth() > 1
         # have depth more than one
-        nodes = self._nodes_by_depth[self._max_tree_depth]
+        nodes = self._nodes_by_depth[self.__get_max_tree_depth()]
         # parent => children
         parents = dict()    # type: Dict[int, List[Node]]
 
@@ -187,9 +225,6 @@ class Collector(object):
         for node in nodes:
             del self._nodes_by_sid[node.get_sid()]
         # remove layer
-        del self._nodes_by_depth[self._max_tree_depth]
-        self._max_tree_depth -= 1
-
-
-
-collector = Collector()
+        del self._nodes_by_depth[self.__get_max_tree_depth()]
+        logger.info("test_dict: len2 = {}".format(len(self._nodes_by_depth)))
+        self.__decrement_max_tree_depth()
