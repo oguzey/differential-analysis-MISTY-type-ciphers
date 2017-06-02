@@ -147,3 +147,4 @@ if __name__ == "__main__":
             f_mark.write("\nMarks:\n")
             for mark in marks:
                 f_mark.write("\t{}\n".format(mark))
+        logger.info("Analyzer done with {} cipher with {} rounds".format(cipher_name, amount_rounds))
