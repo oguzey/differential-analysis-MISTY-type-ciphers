@@ -1,0 +1,28 @@
+System: 
+
+a1 --F--> c2
+a2 ⊕ λ(c2) --G--> c3
+a3 ⊕ μ(c3) --F--> c4
+
+where
+[a1, a2, a3] - input variables
+[c2, c3, c4] - output variables
+b[N] - unknown variables (N = 0;1;2;3...)
+
+Total cases handled: 49
+
+Marks:
+	p*q
+	q
+	p*q
+	p**2
+	p**2*q
+	p
+	p**2*q
+	p
+	p*q
+	p
+	p**2*q
+	p**2
+	p*q
+	p**2*q
