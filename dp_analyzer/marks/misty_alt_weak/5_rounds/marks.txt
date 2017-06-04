@@ -1,0 +1,111 @@
+System: 
+
+a1 --G--> b1 ⊕ λ(a2)
+a4 --F--> c1 ⊕ μ(b1)
+a3 --G--> c4 ⊕ λ(c1)
+a2 --F--> c3 ⊕ μ(c4)
+b1 --G--> c2 ⊕ λ(c3)
+
+where
+[a1, a2, a3, a4] - input variables
+[c1, c2, c3, c4] - output variables
+b[N] - unknown variables (N = 0;1;2;3...)
+
+Total cases handled: 237
+
+Marks:
+	p**2*q**2
+	p**2*q**2
+	p**2*q**2
+	p**2*q**2
+	p**2*q**2
+	p**2*q**2
+	p**2*q
+	p**2*q**2
+	p**2*q**2
+	p*q**3
+	p*q**3
+	p*q**3
+	p*q**3
+	p*q**3
+	p**2*q**2
+	p**2*q
+	p**2*q**2
+	p**2*q
+	p**2*q**2
+	p**2*q
+	p**2*q**2
+	p**2*q
+	p**2*q**2
+	p**2*q**2
+	p*q**2
+	p**2*q
+	p**2*q**2
+	p*q**3
+	p*q**3
+	p*q**3
+	p*q**2
+	p*q**3
+	p*q**2
+	p*q**3
+	p*q
+	p*q
+	p*q
+	p**2*q
+	p**2*q
+	p**2*q
+	p**2*q
+	p**2*q
+	p**2
+	p**2*q
+	p**2*q
+	p*q
+	p*q**2
+	p*q**2
+	p*q**2
+	p*q
+	p*q**2
+	p*q
+	p*q**2
+	p*q**2
+	p*q**2
+	p*q**2
+	p*q**2
+	q**3
+	q**3
+	q**3
+	p*q**2
+	p*q**2
+	N*p*q**2
+	p*q
+	N*p*q**2
+	p*q
+	p*q**2
+	p
+	p
+	p
+	q
+	q
+	p*q
+	N*p*q
+	p*q
+	p
+	N*p*q
+	p
+	q**2
+	p*q
+	N*q**2
+	q**2
+	p**2*q**3
+	p**2*q**3
+	p**2*q**2
+	p**2*q**3
+	p**2*q**3
+	p**2*q**3
+	p**2*q**2
+	p**2*q**3
+	p**2*q**2
+	p**2*q**2
+	p**2*q**3
+	p**2*q**2
+	p**2*q**3

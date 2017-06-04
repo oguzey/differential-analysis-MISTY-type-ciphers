@@ -140,7 +140,7 @@ class Collector(object):
             if parents.get(psid, None) is None:
                 parents[psid] = []
             parents[psid].append(node)
-
+        logger.info("collector: found {} parents of {} childrens".format(len(parents), len(nodes)))
         for psid in parents.keys():
             children = parents[psid]
             assert 1 <= len(children) <= 2
@@ -171,9 +171,10 @@ class Collector(object):
                             pmark.extend(cmark1)
                         else:
                             # cmark1 and cmark2 is not None
+                            logger.info("collector: len(ch_mark1)={}, len(ch_mark2)={}".format(len(cmark1), len(cmark2)))
                             for m1 in cmark1:
                                 for m2 in cmark2:
-                                    logger.info("collection: fork parent append '{}' mark".format(m1 + m2))
+                                    logger.info("collector: fork parent append '{}' mark".format(m1 + m2))
                                     pmark.append(m1 + m2)
 
             orig_parent.set_mark(pmark)
@@ -185,6 +186,7 @@ class Collector(object):
         # remove layer
         del self._nodes_by_depth[self._max_tree_depth]
         self._max_tree_depth -= 1
+        logger.info("collector: max_tree_depth became {}".format(self._max_tree_depth))
 
 
 collector = Collector()
