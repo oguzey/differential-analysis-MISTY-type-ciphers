@@ -1,6 +1,6 @@
 from enum import Enum
 from variable import Variable
-from side import Side
+from side import Side, SideException
 from logger import logger
 from typing import List, Tuple, Union, Optional
 from mypy_extensions import NoReturn
@@ -99,7 +99,10 @@ class Condition(object):
         var = self.__right_side.pop_the_latest_variable()
         if var:
             self.__left_side.add_variable(var)
-            self.__right_side.move_lo_from_var(var)
+            try:
+                self.__right_side.move_lo_from_var(var)
+            except SideException as se:
+                raise ConditionException(str(se))
         self.__state = ConditionState.IS_ZERO if self.__right_side.is_empty() else ConditionState.IS_EQUAL
         return True
 
@@ -127,7 +130,10 @@ class Condition(object):
         var = side.pop_the_latest_variable()
         s_var = str(var)
         assert var is not None
-        side.move_lo_from_var(var)
+        try:
+            side.move_lo_from_var(var)
+        except SideException as se:
+            raise ConditionException("Can not create zero condition {}".format(s))
         c = Condition(Side(var), side, ConditionState.IS_ZERO if side.is_empty() else ConditionState.IS_EQUAL)
         logger.info("create_zero_condition: var: {}; side: {}. => '{}'".format(s_var, s, c))
         return c

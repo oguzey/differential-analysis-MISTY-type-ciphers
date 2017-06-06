@@ -205,5 +205,7 @@ class Side(object):
         opers = var.get_operators()  # type: List[Union[LOLambda, LOMu]]
         while len(opers) > 0:
             lo = opers.pop(-1)
+            if var.is_zero() and isinstance(lo, LOLambda) and lo.is_inverse():
+                raise SideException("Move operato lambda from zero")
             lo.make_inverse()
             self.apply_loperator(lo)
