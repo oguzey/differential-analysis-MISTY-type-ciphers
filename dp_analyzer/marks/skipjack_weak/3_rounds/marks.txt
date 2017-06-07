@@ -24,6 +24,6 @@ Marks:
 	p
 	p*q
 	p*q**2
-	p*q
 	q**2
+	p*q
 	p*q**2

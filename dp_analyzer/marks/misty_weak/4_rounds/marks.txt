@@ -34,12 +34,12 @@ Marks:
 	p**2*q
 	p**2*q
 	p**2*q
-	p*q**2
 	p**2*q
 	p*q**2
 	p*q**2
-	p*q
 	p*q**2
+	p*q**2
+	p*q
 	p*q
 	p**2
 	p**2

@@ -51,12 +51,12 @@ Marks:
 	p*q
 	p*q
 	p*q
-	p*q
-	p**2
-	p**2
 	p**2
 	p*q
 	p**2
+	p**2
+	p**2
+	p*q
 	p*q
 	p*q
 	q

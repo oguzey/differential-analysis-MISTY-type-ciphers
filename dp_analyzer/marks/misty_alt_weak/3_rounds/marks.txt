@@ -16,10 +16,10 @@ Marks:
 	p*q
 	p*q
 	p*q
+	p*q**2
 	p*q
 	p*q**2
 	p*q**2
-	p*q**2
 	p*q
 	p*q
 	p*q
@@ -37,13 +37,13 @@ Marks:
 	p
 	q
 	q
-	p*q
 	q
 	p*q
-	q**2
 	p*q
-	q
+	p*q
 	q**2
+	q**2
+	q
 	q
 	p
 	p

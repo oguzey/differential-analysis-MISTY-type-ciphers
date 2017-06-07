@@ -14,15 +14,15 @@ Total cases handled: 49
 Marks:
 	p*q
 	q
-	p*q
-	p**2
-	p**2*q
-	p
-	p**2*q
-	p
-	p*q
-	p
-	p**2*q
 	p**2
 	p*q
+	p**2*q
+	p
+	p**2*q
+	p
+	p*q
+	p**2*q
+	p
+	p*q
+	p**2
 	p**2*q

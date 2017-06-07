@@ -33,15 +33,15 @@ Marks:
 	p**2*q**2
 	p**2*q
 	p**2*q**2
-	p**2*q
 	p**2*q**2
+	p**2*q
 	p**2*q
 	p**2*q**2
 	p**2*q**2
 	p*q**2
+	p*q**3
 	p**2*q
 	p**2*q**2
-	p*q**3
 	p*q**3
 	p*q**3
 	p*q**2
@@ -51,7 +51,6 @@ Marks:
 	p*q
 	p*q
 	p*q
-	p**2*q
 	p**2*q
 	p**2*q
 	p**2*q
@@ -59,8 +58,9 @@ Marks:
 	p**2
 	p**2*q
 	p**2*q
-	p*q
+	p**2*q
 	p*q**2
+	p*q
 	p*q**2
 	p*q**2
 	p*q
@@ -83,26 +83,26 @@ Marks:
 	p*q**2
 	p
 	p
+	q
 	p
 	q
-	q
+	p*q
 	p*q
 	N*p*q
-	p*q
 	p
 	N*p*q
 	p
+	p*q
 	q**2
-	p*q
 	N*q**2
+	p**2*q**3
 	q**2
-	p**2*q**3
-	p**2*q**3
 	p**2*q**2
 	p**2*q**3
 	p**2*q**3
 	p**2*q**3
 	p**2*q**2
+	p**2*q**3
 	p**2*q**3
 	p**2*q**2
 	p**2*q**2

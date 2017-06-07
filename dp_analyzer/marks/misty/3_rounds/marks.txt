@@ -19,20 +19,20 @@ Marks:
 	p**2
 	p**2
 	p**2
+	p*q
 	p**2
 	p*q
 	p**2*q
+	p**2*q
+	p**2*q
+	p**2*q
+	p
+	p
+	p
 	p*q
-	p**2*q
-	p**2*q
-	p**2*q
-	p
-	p
-	p
 	q
 	p*q
 	p
-	p*q
 	p**2
 	p**2
 	p*q
