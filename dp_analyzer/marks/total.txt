@@ -64,17 +64,17 @@
 │   ├── 13_rounds   => 5132;    N**3*p**2*q**3
 │   └── 14_rounds   => 7202;    N**3*p**2*q**3
 ├── skipjack
-│   ├── 3_rounds
-│   ├── 4_rounds
-│   ├── 5_rounds
-│   ├── 6_rounds
-│   ├── 7_rounds
-│   ├── 8_rounds
-│   ├── 9_rounds
-│   ├── 10_rounds
-│   ├── 11_rounds
-│   ├── 12_rounds
-│   ├── 13_rounds
+│   ├── 3_rounds    => 49;      max(p, q)
+│   ├── 4_rounds    => 285;     max(p, q)
+│   ├── 5_rounds    => 285;     max(p, q)
+│   ├── 6_rounds    => 341;     p
+│   ├── 7_rounds    => 427;     max(N*p**2, N*p*q)
+│   ├── 8_rounds    => 627;     N*p**2
+│   ├── 9_rounds    => 900;     N*p*q**2
+│   ├── 10_rounds   => 1379;    N**2*p*q**3, N*p*q**2, N*p**2    !!!!
+│   ├── 11_rounds   => 1989;    N*p*q**3, N*p*q**2
+│   ├── 12_rounds   => 3111;    N**2*p*q**3
+│   ├── 13_rounds   => 4396;    N**2*p**2*q**3
 │   └── 14_rounds
 ├── skipjack_weak
 │   ├── 3_rounds
