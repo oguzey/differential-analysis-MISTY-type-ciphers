@@ -1,0 +1,91 @@
+├── misty
+│   ├── 3_rounds    => 105;     max(p, q)
+│   ├── 4_rounds    => 225;     max(p, q)
+│   ├── 5_rounds    => 237;     max(p, q)
+│   ├── 6_rounds    => 309;     max(p, q)
+│   ├── 7_rounds    => 407;     max(p*q, N*p**2)
+│   ├── 8_rounds    => 593;     N*p**2
+│   ├── 9_rounds    => 834;     N*p**2
+│   ├── 10_rounds   => 1291;    max(N*p*q**2, N*p**2*q**2, N**2*p**2*q**3)
+│   ├── 11_rounds   => 1832;    max(p*q**3, N**2*p**2*q**2)
+│   ├── 12_rounds   => 2928;    N**2*p**2*q**3
+│   ├── 13_rounds   => 4136;    N**2*p**2*q**3 + p**2*q**4
+│   └── 14_rounds   => 6698;    N**2*p**2*q**3 + N**2*p**3*q**3 + p**4*q**5 + p**3*q**5
+├── misty_weak
+│   ├── 3_rounds    => 105;     max(p, q)
+│   ├── 4_rounds    => 225;     max(p, q)
+│   ├── 5_rounds    => 241;     max(p, q)
+│   ├── 6_rounds    => 309;     p
+│   ├── 7_rounds    => 411;     p
+│   ├── 8_rounds    => 585;     N*p**2
+│   ├── 9_rounds    => 890;     N*p**2
+│   ├── 10_rounds   => 1255;    N*p**2
+│   ├── 11_rounds   => 1984;    max(N**2*p**2*q**3, N*p**3*q**3 + N*p**2*q**3 + p**4*q**3)
+│   ├── 12_rounds   => 2816;    max(N**2*p**2*q**3, N*p**2*q**3 + N**2*p**3*q**3 + p**4*q**5 + p**3*q**5)
+│   └── 13_rounds   => 4529;    N**2*p**2*q**3
+├── misty2
+│   ├── 2_rounds    => 225;     max(p, q)
+│   ├── 3_rounds    => 255;     max(N*p*q, N*p**2)
+│   ├── 4_rounds    => 585;     N*p**2
+│   ├── 5_rounds    => 1230;    N**2*p**2*q**2
+│   ├── 6_rounds    => 3212;    N**2*p**2*q**3
+│   └── 7_rounds    => 6346;    N**2*p**2*q**3  (check this mark)
+├── misty2_weak
+│   ├── 2_rounds    => 255;     max(p, q)
+│   ├── 3_rounds    => 261;     p
+│   ├── 4_rounds    => 567;     N*p**2
+│   ├── 5_rounds    => 1443;    N**2*p**2*q
+│   ├── 6_rounds    => 2930;    N**3*p**2*q**3
+│   └── 7_rounds    => 7692;    N**3*p**2*q**4
+├── misty_alt
+│   ├── 3_rounds    => 105;     max(p, q)
+│   ├── 4_rounds    => 225;     max(p, q)
+│   ├── 5_rounds    => 235;     max(p, q)
+│   ├── 6_rounds    => 276;     p
+│   ├── 7_rounds    => 358;     max(N*p*q, N*p**2)
+│   ├── 8_rounds    => 609;     max(N**2*p*q**2, N**2*p**2*q)
+│   ├── 9_rounds    => 903;     N**2*p*q**2
+│   ├── 10_rounds   => 1462;    max(N**2*p*q**3, N**2*p**2*q**2)
+│   ├── 11_rounds   => 2063;    N**2*p**2*q**2
+│   ├── 12_rounds   => 3333;    N**3*p**2*q**3
+│   ├── 13_rounds   => 4683;    N**3*p**2*q**3
+│   └── 14_rounds   => 7611;    N**2*p**2*q**3
+├── misty_alt_weak
+│   ├── 3_rounds    => 105;     max(p, q)
+│   ├── 4_rounds    => 225;     max(p, q)
+│   ├── 5_rounds    => 237;     max(p, q)
+│   ├── 6_rounds    => 271;     q
+│   ├── 7_rounds    => 371;     p
+│   ├── 8_rounds    => 595;     N*p**2
+│   ├── 9_rounds    => 971;     p**2*q, N*p**2, N**2*p*q**2
+│   ├── 10_rounds   => 1397;    N**2*p*q**2
+│   ├── 11_rounds   => 2248;    N**2*p*q**3
+│   ├── 12_rounds   => 3163;    N**3*p**2*q**3
+│   ├── 13_rounds   => 5132;    N**3*p**2*q**3
+│   └── 14_rounds   => 7202;    N**3*p**2*q**3
+├── skipjack
+│   ├── 3_rounds
+│   ├── 4_rounds
+│   ├── 5_rounds
+│   ├── 6_rounds
+│   ├── 7_rounds
+│   ├── 8_rounds
+│   ├── 9_rounds
+│   ├── 10_rounds
+│   ├── 11_rounds
+│   ├── 12_rounds
+│   ├── 13_rounds
+│   └── 14_rounds
+├── skipjack_weak
+│   ├── 3_rounds
+│   ├── 4_rounds
+│   ├── 5_rounds
+│   ├── 6_rounds
+│   ├── 7_rounds
+│   ├── 8_rounds
+│   ├── 9_rounds
+│   ├── 10_rounds
+│   ├── 11_rounds
+│   ├── 12_rounds
+│   ├── 13_rounds
+│   └── 14_rounds
