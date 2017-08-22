@@ -10,7 +10,7 @@ class CommonConditionGenerator(object):
     Generates all possible combination of zero conditions and non zero conditions
     for determined input or output variables
     """
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @staticmethod

@@ -52,9 +52,9 @@ class Transition(object):
 
     def apply_condition(self, condition: Condition) -> None:
         """
-        Condition shoud be already formated !!!
-        :param condition:
-        :return:
+        Apply the condition to this transition
+        :param condition: Condition should be already formatted! i.e. format should be like A = B + C
+        :return: None
         """
         if condition.get_state() == ConditionState.IS_NOT_ZERO:
             logger.warn("Can not apply NOT_ZERO condition: {}".format(condition))
@@ -63,6 +63,7 @@ class Transition(object):
         condition_left = condition.get_left_side()
         condition_right = condition.get_right_side()
 
+        # XXX: Expect formatted condition
         assert len(condition_left) == 1
         var = condition_left.get_first()
 

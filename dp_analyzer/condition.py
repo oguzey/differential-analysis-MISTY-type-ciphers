@@ -2,8 +2,6 @@ from enum import Enum
 from variable import Variable
 from side import Side, SideException
 from logger import logger
-from typing import List, Tuple, Union, Optional
-from mypy_extensions import NoReturn
 
 
 class ConditionException(Exception):
@@ -69,7 +67,6 @@ class Condition(object):
             if self.__left_side.is_empty() and self.__state == ConditionState.IS_NOT_ZERO:
                 return False
         else:
-            # TODO: check me
             if self.__state != ConditionState.IS_EQUAL:
                 return False
         # TODO: check case (EMPTY, EMPTY, IS_ZERO)
@@ -143,7 +140,7 @@ class Condition(object):
         assert isinstance(side, Side) and not side.is_empty()
         return Condition(side, Side(), ConditionState.IS_NOT_ZERO)
 
-    def check_contains_var(self, var: Variable, state: ConditionState):
+    def check_contains_var(self, var: Variable, state: ConditionState) -> bool:
         assert len(self.__left_side) == 1 and self.__right_side.is_empty()
         if self.__left_side.contains_element(var) and self.__state == state:
             return True

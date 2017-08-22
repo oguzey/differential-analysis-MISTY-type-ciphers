@@ -1,6 +1,6 @@
 from variable import Variable, VariableType
 from logger import logger
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Sized
 from mypy_extensions import NoReturn
 from linear_operator import LOLambda, LOMu
 
@@ -9,7 +9,7 @@ class SideException(Exception):
     pass
 
 
-class Side(object):
+class Side(Sized):
     def __init__(self, *args: Variable) -> None:
         assert all([isinstance(x, Variable) for x in args])
         self.__vars = list(args)  # type: List[Variable]
@@ -29,15 +29,6 @@ class Side(object):
     def copy(self) -> 'Side':
         return Side(*[x.clone() for x in self.__vars])
 
-    # def equals(self, other: 'Side') -> bool:
-    #     return self.__eq__(other)
-
-    # def contains(self, other: 'Side') -> bool:
-    #     for var in other.__vars:
-    #         if var not in self.__vars:
-    #             return False
-    #     return True
-
     def contains_element(self, element: Variable) -> bool:
         return element in self.__vars
 
@@ -56,11 +47,8 @@ class Side(object):
     def is_trivial(self) -> bool:
         return all(map(lambda x: not x.is_unknown(), self.__vars))
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return len(self.__vars) == 0
-
-    # def get_vars(self) -> List[Variable]:
-    #     return self.__vars
 
     def get_first(self) -> Variable:
         return self.__vars[0]
@@ -136,17 +124,6 @@ class Side(object):
             self.add_side(side_c)
 
         return len(rm_vars) != 0
-
-    # def replace_in_side(self, would_repl: 'Side', replacement: 'Side') -> None:
-    #     """ all variables in 'would_repl' will be replaced to 'replacement' """
-    #     assert isinstance(would_repl, Side) and isinstance(replacement, Side)
-    #     assert self.contains(would_repl)
-    #     # remove all elements from would_repl in self
-    #     for var in would_repl.__vars:
-    #         self.pop_variable(var)
-    #
-    #     # add all elements from replacement to self
-    #     self.add_side(replacement)
 
     def add_variable(self, variable: Optional[Variable]) -> None:
         if variable is None:

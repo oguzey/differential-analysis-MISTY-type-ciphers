@@ -17,7 +17,7 @@ class NodeType(Enum):
 
 
 class Node(object):
-    def __init__(self, sid: int, psid: int, ntype: Optional[NodeType], tree_depth: int):
+    def __init__(self, sid: int, psid: int, ntype: Optional[NodeType], tree_depth: int) -> None:
         self._sid = sid                 # type: int
         self._psid = psid               # type: int
         self._node_type = ntype         # type: NodeType
@@ -48,7 +48,7 @@ class Node(object):
 
 
 class Collector(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self._counter_sid = Counter()   # type: Counter
         self._nodes_by_sid = dict()     # type: Dict[int, Node]
         self._nodes_by_depth = dict()   # type: Dict[int, List[Node]]

@@ -10,7 +10,7 @@ class VariableType(Enum):
     UNKNOWN = 2
     ZERO = 3
 
-    def __str__(self):
+    def __str__(self) -> str:
         return {VariableType.INPUT: 'a',
                 VariableType.OUTPUT: 'c',
                 VariableType.UNKNOWN: 'b',
@@ -18,6 +18,7 @@ class VariableType(Enum):
 
 
 class Variable(object):
+    # XXX: It is workaround for getting unique id for Variable object
     # __k__ - coefficient for calculation hash of Variable
     __k__ = 1000000000  # type: int
     __id__ = {
@@ -27,10 +28,10 @@ class Variable(object):
         VariableType.ZERO: Counter()
     }  # type: Dict[Enum, Counter]
 
-    def __init__(self, type_var: VariableType, id: int=None) -> None:
+    def __init__(self, type_var: VariableType, id_predefined: int=None) -> None:
         super(Variable, self).__init__()
-        if id is not None:
-            self.__id = id
+        if id_predefined is not None:
+            self.__id = id_predefined
         else:
             self.__id = Variable.__id__[type_var].increment()  # type: int
 
@@ -102,7 +103,7 @@ class Variable(object):
             x.apply_lin_oper(lop.clone())
         return x
 
-    def apply_lin_oper(self, lin_op: Union[LOMu, LOLambda]):
+    def apply_lin_oper(self, lin_op: Union[LOMu, LOLambda]) -> None:
         assert lin_op is not None
         if len(self.__loperators) > 0:
             top_lo = self.__loperators[-1]

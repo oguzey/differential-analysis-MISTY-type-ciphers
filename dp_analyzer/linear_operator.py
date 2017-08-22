@@ -6,7 +6,7 @@ class TypeLO(Enum):
     EXTENDER = 1
     CONSTRICTOR = 2
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._name_.capitalize()
 
 
@@ -45,7 +45,7 @@ class ExtenderLinearOperator(LinearOperator):
     def __init__(self) -> None:
         super(ExtenderLinearOperator,  self).__init__(TypeLO.EXTENDER,  "μ")
 
-    def clone(self):
+    def clone(self) -> 'ExtenderLinearOperator':
         c = ExtenderLinearOperator()
         c._is_inverse = self.is_inverse()
         return c
@@ -55,7 +55,7 @@ class ConstrictorLinearOperator(LinearOperator):
     def __init__(self) -> None:
         super(ConstrictorLinearOperator, self).__init__(TypeLO.CONSTRICTOR,  "λ")
 
-    def clone(self):
+    def clone(self) -> 'ConstrictorLinearOperator':
         c = ConstrictorLinearOperator()
         c._is_inverse = self.is_inverse()
         return c

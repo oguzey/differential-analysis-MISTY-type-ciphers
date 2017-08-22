@@ -9,7 +9,7 @@ import multiprocessing as mp
 from os.path import join as path_join
 from os import getcwd, makedirs
 from data.vars import System
-from collector import collector, Node
+from collector import collector
 
 
 def zero_conds_to_str(zero_conds: List[Condition]) -> str:
@@ -29,7 +29,6 @@ def worker(system, input_tasks, done_tasks):
         system.estimate(append_to_input)
     except Exception as ex:
         raise ex
-    # after get_estimate we should get estimate so we can add the system to done_tasks
     system.close_log_file()
     done_tasks.put(system)
     input_tasks.put('no-task')

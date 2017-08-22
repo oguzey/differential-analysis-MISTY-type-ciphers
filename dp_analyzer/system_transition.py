@@ -2,7 +2,7 @@ from transition import Transition
 from condition import Condition, ConditionException, ConditionState
 from side import Side
 from logger import logger
-from typing import List, Callable, Set
+from typing import List, Callable, Set, Optional
 from counter import Counter
 import logging
 from os.path import join as path_join
@@ -17,14 +17,16 @@ class SystemTransition(object):
     _base_log_path = path_join(getcwd(), "logs")  # type: str
 
     @staticmethod
-    def set_base_log_path(log_path: str):
+    def set_base_log_path(log_path: str) -> None:
         SystemTransition._base_log_path = log_path
 
     def __init__(self, transitions: List[Transition]) -> None:
         assert all([isinstance(x, Transition) for x in transitions])
         self.__transitions = transitions  # type: List[Transition]
-        self._mark = None
+        self._mark = None  # type: Optional[Symbol]
         self._id = SystemTransition.__id.increment()  # type: int
+        # Can not initialize logger here because have serialize issue in multiprocess module.
+        # Functions 'open_log_file' and 'close_log_file' should be called before work and after work with object.
         self._logger = None  # type: logging.Logger
         self._file_handler = []  # type: List
 
@@ -32,8 +34,8 @@ class SystemTransition(object):
 
         # Condition variables
         # Unchanged variables
-        self._common_zero_conds = None  # type: Set[Condition]
-        self._common_non_zero_conds = None  # type: Set[Condition]
+        self._common_zero_conds = None  # type: List[Condition]
+        self._common_non_zero_conds = None  # type: List[Condition]
 
         self._conds_zero = []  # type: List[Condition]
         self._conds_non_zero = []  # type: List[Condition]
@@ -41,7 +43,7 @@ class SystemTransition(object):
 
         # collecting marks
         self._node = None   # type: Node
-        self._nodes = []
+        self._nodes = []    # type: List[Node]
 
     def __str__(self) -> str:
         system = ""  # type: str
@@ -53,16 +55,14 @@ class SystemTransition(object):
         assert node is not None and isinstance(node, Node)
         self._node = node
 
-    def handle_by_collector(self):
+    def handle_by_collector(self) -> None:
         for node in self._nodes:
-            #logger.info("st_node: node ({}) was added with tree_depth = {} to collector".format(node.get_sid(), node.get_tree_depth()))
             collector.append_to_nodes(node)
 
     def save_node(self, node: Node) -> None:
-        #logger.info("st_node: node ({}) was added with tree_depth = {}".format(node.get_sid(), node.get_tree_depth()))
         self._nodes.append(node)
 
-    def open_log_file(self):
+    def open_log_file(self) -> None:
         self._logger = logging.getLogger("system_transition.new_object")
         fh = logging.FileHandler(path_join(SystemTransition._base_log_path, str(self._id)))
         fh.setLevel(logging.DEBUG)
@@ -70,7 +70,7 @@ class SystemTransition(object):
         self._logger.addHandler(fh)
         self._file_handler.append(fh)
 
-    def close_log_file(self):
+    def close_log_file(self) -> None:
         assert len(self._file_handler) > 0
         for handler in self._file_handler:
             self._logger.removeHandler(handler)
@@ -83,14 +83,14 @@ class SystemTransition(object):
         self._file_handler.clear()
         self._logger = None
 
-    def get_system_id(self):
+    def get_system_id(self) -> int:
         return self._id
 
     def get_amount_rounds(self) -> int:
         assert all(not tran.has_both_empty_side() for tran in self.__transitions)
         return len(self.__transitions)
 
-    def get_mark(self):
+    def get_mark(self) -> Optional[Symbol]:
         return self._mark
 
     def set_common_conditions(self, in_zero_cond: List[Condition], in_non_zero_cond: List[Condition],
@@ -153,7 +153,6 @@ class SystemTransition(object):
             transition.apply_condition(condition)
 
     def _use_and_append_zero_cond(self, condition: Condition) -> None:
-        #condition.normalise()
         self.__apply_condition(condition)
         self.dump_system("System after apply condition {}".format(condition), with_main_conds=False)
         for nzcondition in self._conds_non_zero:
