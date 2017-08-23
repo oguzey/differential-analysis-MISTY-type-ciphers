@@ -40,9 +40,25 @@ def test_side_str():
     global b_out
     global n_unk
     x = side.Side(a_in, b_out, n_unk)
-    assert str(x) == "[Input : 1] ⊕ [Output : 1] ⊕ [Unknown : 1]"
+
+    assert str(x) == "{} ⊕ {} ⊕ {}".format(a_in, b_out, n_unk)
 
 
-def test_side_contains_side():
-    x = side.Side(a_in, b_out, n_unk)
-    y = side.Side(a_in, a_in, b_out, n_unk)
+def test_side_is_empty():
+    global b_out
+    x = side.Side(b_out)
+    y = side.Side()
+
+    assert x.is_empty() == False
+    assert y.is_empty() == True
+
+
+def test_side_replace_var_by_side():
+    global a_in
+    global b_out
+    global n_unk
+    x = side.Side(b_out, n_unk)
+    y = side.Side(a_in, b_out, n_unk)
+    y.replace_var_by_side(a_in, x)
+
+    assert y.is_empty() == True

@@ -1,6 +1,3 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append("dp_analyzer")
 import pytest
 from variable import Variable, VariableType
 from common_condition_generator import CommonConditionGenerator

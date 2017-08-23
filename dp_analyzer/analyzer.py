@@ -10,6 +10,8 @@ from os.path import join as path_join
 from os import getcwd, makedirs
 from data.vars import System
 from collector import collector
+import os
+from optparse import OptionParser
 
 
 def zero_conds_to_str(zero_conds: List[Condition]) -> str:
@@ -116,7 +118,19 @@ def main(transitions, inputs, outputs, cond_func, amount_workers=mp.cpu_count())
 
 if __name__ == "__main__":
 
-    root_log_path = path_join(getcwd(), "logs")
+    parser = OptionParser()
+    parser.add_option("-l", "--logdir", dest="logdir",
+                      help="write logs to LOGDIR", metavar="LOGDIR")
+    (options, args) = parser.parse_args()
+
+    if options.logdir:
+        if not os.path.isdir(options.logdir):
+            parser.error('{}: No such directory. Please provide correct path.'.format(options.logdir))
+        root_log_path = os.path.abspath(options.logdir)
+    else:
+        root_log_path = path_join(getcwd(), "logs")
+
+    logger.info('Directory {} will be used for saving logs'.format(root_log_path))
     makedirs(root_log_path, exist_ok=True)
     SystemTransition.set_base_log_path(root_log_path)
 
